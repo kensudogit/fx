@@ -1,5 +1,6 @@
 """FX ニュース収集（RSS + OpenAI 分析）"""
 
+import asyncio
 import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime
