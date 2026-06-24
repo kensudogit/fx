@@ -1,0 +1,17 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pandas==2.2.3
+numpy>=1.26.0,<2.1.0
+scikit-learn==1.6.0
+tensorflow==2.18.0
+torch==2.5.1
+matplotlib==3.10.0
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+psycopg[binary]==3.2.3
+boto3==1.35.76
+httpx==0.28.1
+python-dotenv==1.0.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+yfinance==0.2.51

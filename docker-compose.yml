@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fx-postgres
+    environment:
+      POSTGRES_USER: fx_user
+      POSTGRES_PASSWORD: fx_password
+      POSTGRES_DB: fx_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fx_user -d fx_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: fx-dynamodb
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    ports:
+      - "8001:8000"
+
+volumes:
+  postgres_data:

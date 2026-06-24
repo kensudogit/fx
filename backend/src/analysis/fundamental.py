@@ -1,0 +1,167 @@
+from datetime import date, datetime
+from enum import Enum
+
+import httpx
+import pandas as pd
+
+from src.config import settings
+
+
+class EventType(str, Enum):
+    US_EMPLOYMENT = "us_employment"
+    CPI = "cpi"
+    FOMC = "fomc"
+    BOJ = "boj"
+    GDP = "gdp"
+
+
+EVENT_LABELS = {
+    EventType.US_EMPLOYMENT: "米国雇用統計",
+    EventType.CPI: "CPI（消費者物価指数）",
+    EventType.FOMC: "FOMC",
+    EventType.BOJ: "日銀政策決定会合",
+    EventType.GDP: "GDP",
+}
+
+# FRED series IDs for US economic data
+FRED_SERIES = {
+    EventType.US_EMPLOYMENT: "PAYEMS",  # Nonfarm Payrolls
+    EventType.CPI: "CPIAUCSL",  # CPI All Urban Consumers
+    EventType.GDP: "GDP",  # Gross Domestic Product
+}
+
+
+async def fetch_fred_series(series_id: str, limit: int = 24) -> list[dict]:
+    """FRED API から経済指標データを取得"""
+    if not settings.fred_api_key:
+        return []
+
+    url = "https://api.stlouisfed.org/fred/series/observations"
+    params = {
+        "series_id": series_id,
+        "api_key": settings.fred_api_key,
+        "file_type": "json",
+        "sort_order": "desc",
+        "limit": limit,
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(url, params=params)
+        if response.status_code != 200:
+            return []
+        data = response.json()
+
+    observations = []
+    for obs in data.get("observations", []):
+        if obs["value"] == ".":
+            continue
+        observations.append(
+            {
+                "date": obs["date"],
+                "value": float(obs["value"]),
+            }
+        )
+    return observations
+
+
+def get_sample_fundamental_data() -> dict[str, list[dict]]:
+    """サンプルファンダメンタルデータ（APIキー未設定時のフォールバック）"""
+    return {
+        EventType.US_EMPLOYMENT.value: [
+            {"date": "2025-01-03", "value": 256000, "previous": 212000, "forecast": 165000, "unit": "千人"},
+            {"date": "2024-12-06", "value": 227000, "previous": 119000, "forecast": 200000, "unit": "千人"},
+            {"date": "2024-11-01", "value": 12000, "previous": 223000, "forecast": 113000, "unit": "千人"},
+        ],
+        EventType.CPI.value: [
+            {"date": "2025-01-15", "value": 3.0, "previous": 2.7, "forecast": 2.9, "unit": "%"},
+            {"date": "2024-12-11", "value": 2.7, "previous": 2.6, "forecast": 2.7, "unit": "%"},
+            {"date": "2024-11-13", "value": 2.6, "previous": 2.4, "forecast": 2.6, "unit": "%"},
+        ],
+        EventType.FOMC.value: [
+            {"date": "2025-01-29", "value": 4.50, "previous": 4.50, "forecast": 4.50, "unit": "%", "title": "政策金利"},
+            {"date": "2024-12-18", "value": 4.50, "previous": 4.75, "forecast": 4.50, "unit": "%", "title": "政策金利"},
+            {"date": "2024-11-07", "value": 4.75, "previous": 5.00, "forecast": 4.75, "unit": "%", "title": "政策金利"},
+        ],
+        EventType.BOJ.value: [
+            {"date": "2025-01-24", "value": 0.50, "previous": 0.25, "forecast": 0.50, "unit": "%", "title": "政策金利"},
+            {"date": "2024-12-19", "value": 0.25, "previous": 0.25, "forecast": 0.25, "unit": "%", "title": "政策金利"},
+            {"date": "2024-10-31", "value": 0.25, "previous": 0.25, "forecast": 0.25, "unit": "%", "title": "政策金利"},
+        ],
+        EventType.GDP.value: [
+            {"date": "2025-01-30", "value": 2.3, "previous": 3.1, "forecast": 2.6, "unit": "%", "title": "米国GDP成長率"},
+            {"date": "2024-10-30", "value": 2.8, "previous": 3.0, "forecast": 2.8, "unit": "%", "title": "米国GDP成長率"},
+            {"date": "2024-07-25", "value": 2.8, "previous": 1.4, "forecast": 2.0, "unit": "%", "title": "米国GDP成長率"},
+        ],
+    }
+
+
+async def get_fundamental_data(event_type: EventType | None = None) -> dict:
+    """ファンダメンタル分析データを取得"""
+    sample = get_sample_fundamental_data()
+
+    if event_type:
+        types = [event_type]
+    else:
+        types = list(EventType)
+
+    result = {}
+    for et in types:
+        label = EVENT_LABELS[et]
+        if et in FRED_SERIES and settings.fred_api_key:
+            fred_data = await fetch_fred_series(FRED_SERIES[et])
+            if fred_data:
+                result[et.value] = {
+                    "label": label,
+                    "source": "FRED",
+                    "data": fred_data,
+                }
+                continue
+
+        result[et.value] = {
+            "label": label,
+            "source": "sample",
+            "data": sample.get(et.value, []),
+        }
+
+    return result
+
+
+def get_upcoming_events() -> list[dict]:
+    """今後の経済イベントカレンダー（サンプル）"""
+    return [
+        {
+            "date": "2025-02-07",
+            "event_type": EventType.US_EMPLOYMENT.value,
+            "title": EVENT_LABELS[EventType.US_EMPLOYMENT],
+            "country": "US",
+            "impact": "high",
+        },
+        {
+            "date": "2025-02-12",
+            "event_type": EventType.CPI.value,
+            "title": EVENT_LABELS[EventType.CPI],
+            "country": "US",
+            "impact": "high",
+        },
+        {
+            "date": "2025-03-19",
+            "event_type": EventType.FOMC.value,
+            "title": EVENT_LABELS[EventType.FOMC],
+            "country": "US",
+            "impact": "high",
+        },
+        {
+            "date": "2025-03-19",
+            "event_type": EventType.BOJ.value,
+            "title": EVENT_LABELS[EventType.BOJ],
+            "country": "JP",
+            "impact": "high",
+        },
+        {
+            "date": "2025-02-27",
+            "event_type": EventType.GDP.value,
+            "title": "米国GDP（改定値）",
+            "country": "US",
+            "impact": "medium",
+        },
+    ]
