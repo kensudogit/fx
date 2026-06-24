@@ -2,45 +2,58 @@
 
 import json
 import logging
+import os
 from typing import Any
 
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
 
 
+def resolve_openai_api_key() -> str:
+    """Railway 等で複数の環境変数名に対応"""
+    if settings.openai_api_key:
+        return settings.openai_api_key.strip()
+    for name in ("OPENAI_API_KEY", "OPENAI_KEY", "OPENAI_API_TOKEN"):
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
 def get_openai_client() -> OpenAI:
-    if not settings.openai_api_key:
+    api_key = resolve_openai_api_key()
+    if not api_key:
         raise ValueError("OPENAI_API_KEY が設定されていません。Railway の環境変数を確認してください。")
-    return OpenAI(api_key=settings.openai_api_key)
+    return OpenAI(api_key=api_key, timeout=90.0)
+
+
+def _safe_number(value: Any, default: float = 0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def chat_json(system: str, user: str, temperature: float = 0.3) -> dict[str, Any]:
-    """JSON 形式で応答を取得"""
-    client = get_openai_client()
-    response = client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        response_format={"type": "json_object"},
-        temperature=temperature,
-    )
-    content = response.choices[0].message.content or "{}"
-    return json.loads(content)
-
-
-def chat_text(system: str, user: str, temperature: float = 0.5) -> str:
-    client = get_openai_client()
-    response = client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        temperature=temperature,
-    )
-    return response.choices[0].message.content or ""
+    try:
+        client = get_openai_client()
+        response = client.chat.completions.create(
+            model=settings.openai_model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            response_format={"type": "json_object"},
+            temperature=temperature,
+        )
+        content = response.choices[0].message.content or "{}"
+        return json.loads(content)
+    except OpenAIError as e:
+        logger.exception("OpenAI API error")
+        raise ValueError(f"OpenAI API エラー: {e}") from e
+    except json.JSONDecodeError as e:
+        logger.exception("OpenAI JSON parse error")
+        raise ValueError("OpenAI の応答を解析できませんでした") from e

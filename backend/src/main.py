@@ -22,6 +22,7 @@ from src.ai.analyzer import (
     generate_full_report,
     make_trading_decision,
 )
+from src.ai.client import resolve_openai_api_key
 from src.ai.news import analyze_news
 from src.config import settings
 from src.ml.predictor import train_price_predictor
@@ -251,11 +252,21 @@ async def get_calendar():
 
 
 def _require_openai():
-    if not settings.openai_api_key:
+    if not resolve_openai_api_key():
         raise HTTPException(
             status_code=503,
-            detail="OPENAI_API_KEY が未設定です。Railway の環境変数に登録してください。",
+            detail="OPENAI_API_KEY が未設定です。Railway の Variables に OPENAI_API_KEY を登録してください。",
         )
+
+
+@app.get("/api/ai/status")
+async def ai_status():
+    key = resolve_openai_api_key()
+    return {
+        "configured": bool(key),
+        "model": settings.openai_model,
+        "key_preview": f"{key[:8]}..." if len(key) > 8 else None,
+    }
 
 
 @app.get("/api/ml/predict/{symbol}")

@@ -9,6 +9,13 @@ import {
   getAIRisk,
   getAIReport,
 } from "@/lib/api";
+
+async function checkAIStatus(): Promise<{ configured: boolean }> {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const res = await fetch(`${API_BASE}/api/ai/status`, { cache: "no-store" });
+  if (!res.ok) return { configured: false };
+  return res.json();
+}
 import type {
   AINewsAnalysis,
   AIFundamentalAnalysis,
@@ -45,6 +52,7 @@ export default function AIDashboard() {
   const [activeTab, setActiveTab] = useState<AITab>("report");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiReady, setAiReady] = useState<boolean | null>(null);
 
   const [news, setNews] = useState<AINewsAnalysis | null>(null);
   const [fundamental, setFundamental] = useState<AIFundamentalAnalysis | null>(null);
@@ -54,6 +62,7 @@ export default function AIDashboard() {
 
   useEffect(() => {
     getSymbols().then((res) => setSymbols(res.symbols));
+    checkAIStatus().then((s) => setAiReady(s.configured));
   }, []);
 
   const runAnalysis = useCallback(async () => {
@@ -116,7 +125,11 @@ export default function AIDashboard() {
         </div>
       </div>
 
-      <div className="source-badge">Powered by OpenAI API（Railway 環境変数 OPENAI_API_KEY）</div>
+      <div className="source-badge">
+        Powered by OpenAI API
+        {aiReady === false && " — OPENAI_API_KEY が未設定です"}
+        {aiReady === true && " — 接続準備完了"}
+      </div>
 
       {error && <div className="error-banner">{error}</div>}
 
