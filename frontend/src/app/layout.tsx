@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { UsageGuidePanel } from "@/components/UsageGuidePanel";
 
 export const metadata: Metadata = {
   title: "FX Tool - テクニカル・ファンダメンタル分析",
@@ -29,6 +30,7 @@ export default function RootLayout({
         <main>
           <div className="container">{children}</div>
         </main>
+        <UsageGuidePanel />
       </body>
     </html>
   );
