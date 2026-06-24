@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { cache: "no-store", ...options });
@@ -52,7 +52,8 @@ export async function syncMarketData(
 }
 
 export function getChartUrl(symbol: string, days = 200): string {
-  return `${API_BASE}/api/chart/${symbol}?days=${days}`;
+  const base = process.env.NEXT_PUBLIC_API_URL ?? "";
+  return `${base}/api/chart/${symbol}?days=${days}`;
 }
 
 export const SOURCE_LABELS: Record<string, string> = {

@@ -7,3 +7,6 @@ healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+
+# 単一URLでフロントエンド(Next.js) + バックエンド(FastAPI)を起動
+# Next.js が Railway の PORT で待受け、/api/* を内部の uvicorn にプロキシ

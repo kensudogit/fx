@@ -132,25 +132,19 @@ fx/
 
 ## Railway デプロイ
 
-### サービス構成
+単一サービスでフロントエンド + バックエンドを配信します（ルート `Dockerfile`）。
 
-| サービス | Root Directory | Dockerfile |
-|---------|----------------|------------|
-| backend | `/`（リポジトリルート） | `Dockerfile` |
-| frontend | `frontend` | `Dockerfile` |
-| Postgres | — | Railway プラグイン |
+| URL | 内容 |
+|-----|------|
+| `/` | FX Tool UI（Next.js） |
+| `/api/*` | REST API（FastAPI） |
+| `/docs` | API ドキュメント |
+| `/health` | ヘルスチェック |
 
 ### 環境変数
 
-**backend**
 | 変数 | 値 |
 |------|-----|
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-| `CORS_ORIGINS` | フロントエンドの Railway URL |
 
-**frontend**
-| 変数 | 値 |
-|------|-----|
-| `NEXT_PUBLIC_API_URL` | バックエンドの Railway URL |
-
-> DynamoDB は Railway では未使用（インメモリキャッシュに自動フォールバック）
+> DynamoDB は未使用（インメモリキャッシュ）。`NEXT_PUBLIC_API_URL` は未設定で OK（同一オリジン）。

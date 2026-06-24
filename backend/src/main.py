@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, Response
 
 from src.analysis.chart import generate_technical_chart
 from src.analysis.fundamental import (
@@ -103,6 +103,15 @@ def _build_technical_response(symbol: str, result_df, source: str) -> dict:
 async def health():
     frameworks = check_ml_frameworks()
     return {"status": "ok", "ml_frameworks": frameworks}
+
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return """<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta http-equiv="refresh" content="0;url=/docs">
+<title>FX Tool API</title></head>
+<body><p>FX Tool API — <a href="/docs">API Docs</a></p></body></html>"""
 
 
 @app.get("/api/symbols")
