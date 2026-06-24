@@ -12,6 +12,12 @@ const EVENT_TYPES = [
   { key: "gdp", label: "GDP" },
 ];
 
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr);
+  const now = new Date();
+  return Math.ceil((target.getTime() - now.getTime()) / 86400000);
+}
+
 export default function FundamentalPage() {
   const [data, setData] = useState<FundamentalData | null>(null);
   const [calendar, setCalendar] = useState<CalendarEvent[]>([]);
@@ -92,22 +98,34 @@ export default function FundamentalPage() {
             <thead>
               <tr>
                 <th>日付</th>
+                <th>あと</th>
                 <th>イベント</th>
                 <th>国</th>
                 <th>影響度</th>
               </tr>
             </thead>
             <tbody>
-              {calendar.map((event, i) => (
+              {calendar.map((event, i) => {
+                const left = daysUntil(event.date);
+                return (
                 <tr key={i}>
                   <td>{event.date}</td>
+                  <td>
+                    {left <= 0 ? (
+                      <span className="badge badge-warn">本日</span>
+                    ) : left <= 3 ? (
+                      <span className="badge badge-warn">{left}日</span>
+                    ) : (
+                      `${left}日`
+                    )}
+                  </td>
                   <td>{event.title}</td>
                   <td>{event.country}</td>
                   <td className={`impact-${event.impact}`}>
                     {event.impact === "high" ? "高" : "中"}
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>

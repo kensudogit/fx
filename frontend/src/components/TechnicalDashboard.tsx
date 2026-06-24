@@ -13,6 +13,10 @@ import {
 import type { TechnicalAnalysis, TradingSignal, MLPrediction } from "@/types";
 import PriceChart, { OscillatorChart } from "@/components/Chart";
 import SignalPanel from "@/components/SignalPanel";
+import MultiTimeframePanel from "@/components/MultiTimeframePanel";
+import PositionSizePanel from "@/components/PositionSizePanel";
+import BacktestPanel from "@/components/BacktestPanel";
+import EventAlertBanner from "@/components/EventAlertBanner";
 
 type IndicatorTab = "price" | "bb" | "ichimoku" | "rsi" | "macd" | "stochastic";
 
@@ -87,6 +91,7 @@ export default function TechnicalDashboard() {
 
   return (
     <>
+      <EventAlertBanner />
       <div className="page-header">
         <h1>テクニカル分析</h1>
         <div className="controls">
@@ -150,6 +155,8 @@ export default function TechnicalDashboard() {
             )}
           </div>
 
+          <MultiTimeframePanel symbol={symbol} />
+
           <div className="grid-2">
             <div className="card" style={{ gridColumn: "1 / -1" }}>
               <div className="tabs">
@@ -173,6 +180,8 @@ export default function TechnicalDashboard() {
             </div>
 
             <SignalPanel signals={signals} price={price} symbol={symbol} />
+            <PositionSizePanel symbol={symbol} price={price} days={days} />
+            <BacktestPanel symbol={symbol} days={days} />
           </div>
         </>
       )}

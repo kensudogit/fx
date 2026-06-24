@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from enum import Enum
 
 import httpx
@@ -127,41 +127,43 @@ async def get_fundamental_data(event_type: EventType | None = None) -> dict:
 
 
 def get_upcoming_events() -> list[dict]:
-    """今後の経済イベントカレンダー（サンプル）"""
-    return [
-        {
-            "date": "2025-02-07",
-            "event_type": EventType.US_EMPLOYMENT.value,
-            "title": EVENT_LABELS[EventType.US_EMPLOYMENT],
-            "country": "US",
-            "impact": "high",
-        },
-        {
-            "date": "2025-02-12",
-            "event_type": EventType.CPI.value,
-            "title": EVENT_LABELS[EventType.CPI],
-            "country": "US",
-            "impact": "high",
-        },
-        {
-            "date": "2025-03-19",
-            "event_type": EventType.FOMC.value,
-            "title": EVENT_LABELS[EventType.FOMC],
-            "country": "US",
-            "impact": "high",
-        },
-        {
-            "date": "2025-03-19",
-            "event_type": EventType.BOJ.value,
-            "title": EVENT_LABELS[EventType.BOJ],
-            "country": "JP",
-            "impact": "high",
-        },
-        {
-            "date": "2025-02-27",
-            "event_type": EventType.GDP.value,
-            "title": "米国GDP（改定値）",
-            "country": "US",
-            "impact": "medium",
-        },
+    """今後の経済イベントカレンダー（日付は本日基準で動的生成）"""
+    today = date.today()
+    templates = [
+        (3, EventType.US_EMPLOYMENT, "US", "high"),
+        (7, EventType.CPI, "US", "high"),
+        (14, EventType.FOMC, "US", "high"),
+        (21, EventType.BOJ, "JP", "high"),
+        (10, EventType.GDP, "US", "medium"),
+        (1, EventType.CPI, "US", "high"),
+        (28, EventType.US_EMPLOYMENT, "US", "high"),
     ]
+    events = []
+    for offset, et, country, impact in templates:
+        d = today + timedelta(days=offset)
+        title = EVENT_LABELS[et]
+        if et == EventType.GDP and offset == 10:
+            title = "米国GDP（改定値）"
+        events.append({
+            "date": d.isoformat(),
+            "event_type": et.value,
+            "title": title,
+            "country": country,
+            "impact": impact,
+        })
+    return sorted(events, key=lambda e: e["date"])
+
+
+def get_event_alerts(within_hours: int = 48) -> list[dict]:
+    """指定時間以内の高影響イベント"""
+    now = datetime.now()
+    deadline = now + timedelta(hours=within_hours)
+    alerts = []
+    for event in get_upcoming_events():
+        if event["impact"] != "high":
+            continue
+        event_dt = datetime.combine(date.fromisoformat(event["date"]), datetime.min.time())
+        if now <= event_dt <= deadline:
+            hours_left = (event_dt - now).total_seconds() / 3600
+            alerts.append({**event, "hours_until": round(hours_left, 1)})
+    return alerts

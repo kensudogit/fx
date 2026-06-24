@@ -46,3 +46,31 @@ INSERT INTO fx_pairs (symbol, base_currency, quote_currency) VALUES
     ('GBPUSD', 'GBP', 'USD'),
     ('AUDUSD', 'AUD', 'USD')
 ON CONFLICT (symbol) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS tradingview_signals (
+    id SERIAL PRIMARY KEY,
+    symbol VARCHAR(10) NOT NULL,
+    action VARCHAR(10) NOT NULL,
+    price NUMERIC(18, 6),
+    strategy VARCHAR(100),
+    message VARCHAR(500),
+    source VARCHAR(30) DEFAULT 'tradingview',
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tv_signals_received ON tradingview_signals(received_at DESC);
+
+CREATE TABLE IF NOT EXISTS broker_orders (
+    id SERIAL PRIMARY KEY,
+    symbol VARCHAR(10) NOT NULL,
+    side VARCHAR(10) NOT NULL,
+    units INTEGER NOT NULL,
+    order_type VARCHAR(20) DEFAULT 'MARKET',
+    status VARCHAR(20) DEFAULT 'PENDING',
+    fill_price NUMERIC(18, 6),
+    broker VARCHAR(20) DEFAULT 'paper',
+    external_id VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_broker_orders_created ON broker_orders(created_at DESC);

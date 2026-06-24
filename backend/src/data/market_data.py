@@ -26,15 +26,23 @@ YAHOO_HEADERS = {
 }
 
 
-def fetch_from_yahoo_chart_api(symbol: str, days: int = 200) -> pd.DataFrame:
+def fetch_from_yahoo_chart_api(symbol: str, days: int = 200, interval: str = "1d") -> pd.DataFrame:
     """Yahoo Finance Chart API から OHLCV を取得"""
     ticker = YAHOO_TICKERS.get(symbol.upper())
     if not ticker:
         raise ValueError(f"Unknown symbol: {symbol}")
 
-    range_param = "2y" if days > 365 else "1y"
+    if interval == "4h":
+        range_param = "60d"
+        interval_param = "4h"
+        tail = min(days * 6, 360)
+    else:
+        range_param = "2y" if days > 365 else "1y"
+        interval_param = "1d"
+        tail = days
+
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
-    params = {"interval": "1d", "range": range_param}
+    params = {"interval": interval_param, "range": range_param}
 
     with httpx.Client(timeout=30.0, headers=YAHOO_HEADERS) as client:
         response = client.get(url, params=params)
@@ -68,17 +76,17 @@ def fetch_from_yahoo_chart_api(symbol: str, days: int = 200) -> pd.DataFrame:
     if df.empty:
         raise ValueError(f"No valid OHLCV rows for {symbol}")
 
-    return df.tail(days).reset_index(drop=True)
+    return df.tail(tail).reset_index(drop=True)
 
 
-def fetch_from_yfinance(symbol: str, days: int = 200) -> pd.DataFrame:
+def fetch_from_yfinance(symbol: str, days: int = 200, interval: str = "1d") -> pd.DataFrame:
     """yfinance ライブラリから OHLCV を取得"""
     ticker = YAHOO_TICKERS.get(symbol.upper())
     if not ticker:
         raise ValueError(f"Unknown symbol: {symbol}")
 
-    period = "2y" if days > 365 else "1y"
-    raw = yf.download(ticker, period=period, interval="1d", progress=False, auto_adjust=True)
+    period = "60d" if interval == "4h" else ("2y" if days > 365 else "1y")
+    raw = yf.download(ticker, period=period, interval=interval, progress=False, auto_adjust=True)
 
     if raw.empty:
         raise ValueError(f"No data returned for {symbol}")
@@ -101,15 +109,16 @@ def fetch_from_yfinance(symbol: str, days: int = 200) -> pd.DataFrame:
             "volume": df.get("volume", 0).fillna(0).astype(int),
         }
     )
-    return result.tail(days).reset_index(drop=True)
+    tail = min(days * 6, 360) if interval == "4h" else days
+    return result.tail(tail).reset_index(drop=True)
 
 
-def fetch_from_yahoo(symbol: str, days: int = 200) -> pd.DataFrame:
+def fetch_from_yahoo(symbol: str, days: int = 200, interval: str = "1d") -> pd.DataFrame:
     """Yahoo Finance から OHLCV を取得（Chart API → yfinance の順で試行）"""
     errors = []
     for fetcher in (fetch_from_yahoo_chart_api, fetch_from_yfinance):
         try:
-            return fetcher(symbol, days)
+            return fetcher(symbol, days, interval)
         except Exception as e:
             errors.append(str(e))
             logger.warning("%s failed for %s: %s", fetcher.__name__, symbol, e)
@@ -179,14 +188,23 @@ def load_ohlcv_from_db(db: Session, symbol: str, days: int = 200, timeframe: str
     return pd.DataFrame(data)
 
 
-def get_ohlcv_data(symbol: str, days: int = 200) -> tuple[pd.DataFrame, str]:
+def get_ohlcv_data(symbol: str, days: int = 200, timeframe: str = "1d") -> tuple[pd.DataFrame, str]:
     """
     OHLCV データを取得（優先順位: DB → Yahoo Finance → サンプル）
-    Returns: (DataFrame, source)
+    timeframe: 1d（日足）, 4h（4時間足）
     """
     symbol = symbol.upper()
     if symbol not in SYMBOL_BASE_PRICES:
         raise ValueError(f"Unknown symbol: {symbol}")
+
+    if timeframe != "1d":
+        try:
+            df = fetch_from_yahoo(symbol, days, interval=timeframe)
+            return df, "yahoo_finance"
+        except Exception as e:
+            logger.warning("Yahoo %s fetch failed for %s: %s", timeframe, symbol, e)
+            base_price = SYMBOL_BASE_PRICES[symbol]
+            return generate_sample_ohlcv(symbol, min(days, 90), base_price), "sample"
 
     db = SessionLocal()
     try:

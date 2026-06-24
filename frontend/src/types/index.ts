@@ -175,3 +175,143 @@ export interface AIFullReport {
   trading_decision: AITradingDecision;
   risk_management: AIRiskAssessment;
 }
+
+export interface MultiTimeframeTrend {
+  trend: string;
+  label: string;
+  close: number;
+  sma_20: number;
+  sma_50: number;
+  rsi: number | null;
+  signal_bias: string;
+  bars: number;
+  timeframe: string;
+  source: string;
+}
+
+export interface MultiTimeframeAnalysis {
+  symbol: string;
+  alignment: string;
+  alignment_label: string;
+  timeframes: Record<string, MultiTimeframeTrend>;
+}
+
+export interface SignalBacktest {
+  symbol: string;
+  source?: string;
+  total_trades: number;
+  win_rate: number;
+  avg_return_pct: number;
+  buy_trades: number;
+  sell_trades: number;
+  period_bars?: number;
+  message?: string;
+}
+
+export interface PositionSizeResult {
+  symbol: string;
+  price: number;
+  account_balance: number;
+  risk_percent: number;
+  risk_amount_usd: number;
+  stop_pips: number;
+  pip_size: number;
+  pip_value_per_lot_usd: number;
+  recommended_lots: number;
+  position_notional_usd: number;
+  max_loss_usd: number;
+  atr_based_stop: boolean;
+  suggested_take_profit_pips: number;
+}
+
+export interface EventAlert {
+  date: string;
+  event_type: string;
+  title: string;
+  country: string;
+  impact: string;
+  hours_until: number;
+}
+
+export interface TradingViewSignal {
+  id: number;
+  symbol: string;
+  action: string;
+  price: number | null;
+  strategy: string | null;
+  message: string | null;
+  source: string;
+  received_at: string | null;
+}
+
+export interface MLNewsAnalysis {
+  method: string;
+  sentiment: "bullish" | "bearish" | "neutral";
+  sentiment_score: number;
+  bullish_hits: number;
+  bearish_hits: number;
+  key_topics: string[];
+  summary: string;
+}
+
+export interface NewsAnalysisResult {
+  symbol: string;
+  articles: NewsArticle[];
+  ml: MLNewsAnalysis;
+  openai: Pick<
+    AINewsAnalysis,
+    "summary" | "sentiment" | "sentiment_score" | "key_topics" | "market_impact"
+  > | null;
+  openai_error?: string;
+}
+
+export interface BacktraderResult {
+  status: string;
+  engine?: string;
+  symbol?: string;
+  source?: string;
+  initial_cash?: number;
+  final_value?: number;
+  total_return_pct?: number;
+  bars?: number;
+  strategy?: string;
+  message?: string;
+}
+
+export interface OandaStatus {
+  configured: boolean;
+  mode: string;
+  balance: number;
+  currency: string;
+  message?: string;
+  unrealized_pl?: number;
+  open_trade_count?: number;
+}
+
+export interface BrokerOrder {
+  id: number;
+  symbol: string;
+  side: string;
+  units: number;
+  status: string;
+  fill_price: number | null;
+  broker: string;
+  external_id: string | null;
+  created_at: string | null;
+}
+
+export interface DashboardData {
+  symbol: string;
+  price: number;
+  source: string;
+  signals: TradingSignal[];
+  multi_timeframe: MultiTimeframeAnalysis;
+  news_ml: MLNewsAnalysis & { article_count: number };
+  openai_configured: boolean;
+  backtest_simple: SignalBacktest;
+  backtest_backtrader: BacktraderResult;
+  tradingview_signals: TradingViewSignal[];
+  oanda: OandaStatus;
+  recent_orders: BrokerOrder[];
+  stack: { api: string; frontend: string; note: string };
+}

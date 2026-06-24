@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
+    oanda_api_token: str = ""
+    oanda_account_id: str = ""
+    oanda_environment: str = "practice"  # practice | live
+
+    tradingview_webhook_secret: str = ""
+
     cors_origins: str = "http://localhost:3000"
     port: int = 8000
 

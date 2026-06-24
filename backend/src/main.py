@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 
@@ -8,9 +8,14 @@ from src.analysis.chart import generate_technical_chart
 from src.analysis.fundamental import (
     EVENT_LABELS,
     EventType,
+    get_event_alerts,
     get_fundamental_data,
     get_upcoming_events,
 )
+from src.analysis.multi_timeframe import analyze_multi_timeframe
+from src.analysis.position_sizing import calculate_position_size
+from src.analysis.signals import backtest_signals, signals_from_row
+from src.analysis.volatility import calc_atr
 from src.analysis.technical import compute_all_indicators, series_to_list
 from src.data.market_data import get_ohlcv_data, sync_symbol_data
 from src.data.sample_data import SYMBOL_BASE_PRICES
@@ -23,9 +28,14 @@ from src.ai.analyzer import (
     make_trading_decision,
 )
 from src.ai.client import resolve_openai_api_key
-from src.ai.news import analyze_news
+from src.ai.news import analyze_news, fetch_rss_news
+from src.api.dashboard import build_dashboard
+from src.backtest.backtrader_runner import run_backtrader_backtest
+from src.broker.oanda import get_account_summary, list_orders, place_market_order
 from src.config import settings
+from src.ml.news_sentiment import analyze_headlines_ml
 from src.ml.predictor import train_price_predictor
+from src.tradingview.service import list_signals, save_signal
 
 
 @asynccontextmanager
@@ -37,7 +47,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="FX Tool API",
     description="テクニカル分析・ファンダメンタル分析 API",
-    version="1.3.0",
+    version="1.5.0",
     lifespan=lifespan,
 )
 
@@ -198,30 +208,46 @@ async def get_trading_signals(symbol: str, days: int = Query(default=200, ge=30,
     df, source = get_ohlcv_data(symbol, days)
     result_df = compute_all_indicators(df)
     latest = result_df.iloc[-1]
-
-    signals = []
-
-    if latest["rsi"] < 30:
-        signals.append({"indicator": "RSI", "signal": "buy", "value": round(latest["rsi"], 2), "reason": "売られ過ぎ"})
-    elif latest["rsi"] > 70:
-        signals.append({"indicator": "RSI", "signal": "sell", "value": round(latest["rsi"], 2), "reason": "買われ過ぎ"})
-
-    if latest["macd"] > latest["macd_signal"]:
-        signals.append({"indicator": "MACD", "signal": "buy", "reason": "MACDがシグナル線を上抜け"})
-    elif latest["macd"] < latest["macd_signal"]:
-        signals.append({"indicator": "MACD", "signal": "sell", "reason": "MACDがシグナル線を下抜け"})
-
-    if latest["close"] < latest["bb_lower"]:
-        signals.append({"indicator": "Bollinger Bands", "signal": "buy", "reason": "下限バンドタッチ"})
-    elif latest["close"] > latest["bb_upper"]:
-        signals.append({"indicator": "Bollinger Bands", "signal": "sell", "reason": "上限バンドタッチ"})
-
-    if latest["stoch_k"] < 20 and latest["stoch_d"] < 20:
-        signals.append({"indicator": "Stochastic", "signal": "buy", "reason": "売られ過ぎ圏"})
-    elif latest["stoch_k"] > 80 and latest["stoch_d"] > 80:
-        signals.append({"indicator": "Stochastic", "signal": "sell", "reason": "買われ過ぎ圏"})
+    signals = signals_from_row(latest)
 
     return {"symbol": symbol, "source": source, "signals": signals, "price": round(float(latest["close"]), 4)}
+
+
+@app.get("/api/technical/{symbol}/multi-timeframe")
+async def get_multi_timeframe(symbol: str):
+    symbol = _validate_symbol(symbol)
+    try:
+        return analyze_multi_timeframe(symbol)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/technical/{symbol}/backtest")
+async def get_signal_backtest(symbol: str, days: int = Query(default=200, ge=90, le=500)):
+    symbol = _validate_symbol(symbol)
+    df, source = get_ohlcv_data(symbol, days)
+    result_df = compute_all_indicators(df)
+    stats = backtest_signals(result_df)
+    return {"symbol": symbol, "source": source, **stats}
+
+
+@app.get("/api/position-size/{symbol}")
+async def get_position_size(
+    symbol: str,
+    days: int = Query(default=200, ge=30, le=500),
+    account_balance: float = Query(default=10000, ge=100),
+    risk_percent: float = Query(default=1.0, ge=0.1, le=10),
+    stop_pips: float | None = Query(default=None, ge=1),
+    use_atr_stop: bool = Query(default=True),
+):
+    symbol = _validate_symbol(symbol)
+    df, _ = get_ohlcv_data(symbol, days)
+    price = float(df["close"].iloc[-1])
+    atr = calc_atr(compute_all_indicators(df)) if use_atr_stop else None
+    return calculate_position_size(
+        symbol, price, account_balance, risk_percent,
+        stop_pips=stop_pips, atr=atr,
+    )
 
 
 @app.get("/api/chart/{symbol}")
@@ -249,6 +275,11 @@ async def get_fundamental(event_type: str | None = None):
 @app.get("/api/fundamental/calendar")
 async def get_calendar():
     return {"events": get_upcoming_events()}
+
+
+@app.get("/api/fundamental/alerts")
+async def get_alerts(hours: int = Query(default=48, ge=1, le=168)):
+    return {"alerts": get_event_alerts(hours), "within_hours": hours}
 
 
 def _require_openai():
@@ -345,3 +376,100 @@ async def ai_full_report(
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"レポート生成エラー: {e}")
+
+
+# ── TradingView Webhook ──
+@app.post("/api/tradingview/webhook")
+async def tradingview_webhook(request: Request):
+    """TradingView アラート → Webhook URL に設定"""
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    secret = settings.tradingview_webhook_secret
+    if secret:
+        header = request.headers.get("X-Webhook-Secret", "")
+        if header != secret and payload.get("secret") != secret:
+            raise HTTPException(status_code=401, detail="Invalid webhook secret")
+
+    return {"ok": True, "signal": save_signal(payload)}
+
+
+@app.get("/api/tradingview/signals")
+async def tradingview_signals(symbol: str | None = None, limit: int = Query(default=20, le=100)):
+    return {"signals": list_signals(symbol, limit)}
+
+
+# ── ニュース分析（ML + OpenAI）──
+@app.get("/api/news/analysis/{symbol}")
+async def news_analysis(symbol: str, limit: int = Query(default=8, ge=3, le=15)):
+    symbol = _validate_symbol(symbol)
+    articles = await fetch_rss_news(symbol, limit)
+    headlines = [a["title"] for a in articles]
+    result = {
+        "symbol": symbol,
+        "articles": articles,
+        "ml": analyze_headlines_ml(headlines),
+        "openai": None,
+    }
+    if resolve_openai_api_key():
+        try:
+            ai = await analyze_news(symbol, limit)
+            result["openai"] = {
+                "summary": ai.get("summary"),
+                "sentiment": ai.get("sentiment"),
+                "sentiment_score": ai.get("sentiment_score"),
+                "key_topics": ai.get("key_topics"),
+                "market_impact": ai.get("market_impact"),
+            }
+        except Exception as e:
+            result["openai_error"] = str(e)
+    return result
+
+
+# ── Backtrader バックテスト ──
+@app.get("/api/backtest/backtrader/{symbol}")
+async def backtrader_backtest(
+    symbol: str,
+    days: int = Query(default=200, ge=90, le=500),
+    cash: float = Query(default=10000, ge=1000),
+):
+    symbol = _validate_symbol(symbol)
+    return run_backtrader_backtest(symbol, days, cash)
+
+
+# ── OANDA 注文 ──
+@app.get("/api/oanda/status")
+async def oanda_status():
+    return get_account_summary()
+
+
+@app.get("/api/oanda/orders")
+async def oanda_orders(limit: int = Query(default=20, le=100)):
+    return {"orders": list_orders(limit)}
+
+
+@app.post("/api/oanda/orders")
+async def oanda_place_order(
+    symbol: str = Query(...),
+    side: str = Query(..., pattern="^(buy|sell)$"),
+    units: int = Query(default=1000, ge=1, le=1_000_000),
+):
+    symbol = _validate_symbol(symbol)
+    try:
+        return place_market_order(symbol, side, units)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"OANDA error: {e}")
+
+
+# ── 統合ダッシュボード（React 向け BFF）──
+@app.get("/api/dashboard")
+async def dashboard(symbol: str = Query(default="USDJPY"), days: int = Query(default=200, ge=30, le=500)):
+    symbol = _validate_symbol(symbol)
+    try:
+        return await build_dashboard(symbol, days)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

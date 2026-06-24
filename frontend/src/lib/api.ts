@@ -100,3 +100,85 @@ export async function getAIReport(
 ): Promise<import("@/types").AIFullReport> {
   return fetchAPI(`/api/ai/report/${symbol}?account_balance=${accountBalance}`);
 }
+
+export async function getMultiTimeframe(
+  symbol: string
+): Promise<import("@/types").MultiTimeframeAnalysis> {
+  return fetchAPI(`/api/technical/${symbol}/multi-timeframe`);
+}
+
+export async function getSignalBacktest(
+  symbol: string,
+  days = 200
+): Promise<import("@/types").SignalBacktest> {
+  return fetchAPI(`/api/technical/${symbol}/backtest?days=${days}`);
+}
+
+export async function getPositionSize(
+  symbol: string,
+  opts: { accountBalance?: number; riskPercent?: number; stopPips?: number; days?: number } = {}
+): Promise<import("@/types").PositionSizeResult> {
+  const params = new URLSearchParams();
+  if (opts.accountBalance) params.set("account_balance", String(opts.accountBalance));
+  if (opts.riskPercent) params.set("risk_percent", String(opts.riskPercent));
+  if (opts.stopPips) params.set("stop_pips", String(opts.stopPips));
+  if (opts.days) params.set("days", String(opts.days));
+  const q = params.toString();
+  return fetchAPI(`/api/position-size/${symbol}${q ? `?${q}` : ""}`);
+}
+
+export async function getEventAlerts(
+  hours = 48
+): Promise<{ alerts: import("@/types").EventAlert[]; within_hours: number }> {
+  return fetchAPI(`/api/fundamental/alerts?hours=${hours}`);
+}
+
+export async function getDashboard(
+  symbol: string,
+  days = 200
+): Promise<import("@/types").DashboardData> {
+  return fetchAPI(`/api/dashboard?symbol=${symbol}&days=${days}`);
+}
+
+export async function getTradingViewSignals(
+  symbol?: string,
+  limit = 20
+): Promise<{ signals: import("@/types").TradingViewSignal[] }> {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (symbol) q.set("symbol", symbol);
+  return fetchAPI(`/api/tradingview/signals?${q}`);
+}
+
+export async function getNewsAnalysis(
+  symbol: string,
+  limit = 8
+): Promise<import("@/types").NewsAnalysisResult> {
+  return fetchAPI(`/api/news/analysis/${symbol}?limit=${limit}`);
+}
+
+export async function getBacktraderBacktest(
+  symbol: string,
+  days = 200,
+  cash = 10000
+): Promise<import("@/types").BacktraderResult> {
+  return fetchAPI(`/api/backtest/backtrader/${symbol}?days=${days}&cash=${cash}`);
+}
+
+export async function getOandaStatus(): Promise<import("@/types").OandaStatus> {
+  return fetchAPI("/api/oanda/status");
+}
+
+export async function getOandaOrders(
+  limit = 20
+): Promise<{ orders: import("@/types").BrokerOrder[] }> {
+  return fetchAPI(`/api/oanda/orders?limit=${limit}`);
+}
+
+export async function placeOandaOrder(
+  symbol: string,
+  side: "buy" | "sell",
+  units: number
+): Promise<import("@/types").BrokerOrder> {
+  const q = new URLSearchParams({ symbol, side, units: String(units) });
+  return fetchAPI(`/api/oanda/orders?${q}`, { method: "POST" });
+}

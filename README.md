@@ -31,6 +31,15 @@ FX通貨ペアのテクニカル分析・ファンダメンタル分析ツール
 - GDP
 - 経済イベントカレンダー
 
+### 統合トレードダッシュボード (`/dashboard`)
+- **TradingView**: チャート埋め込み + Webhook でシグナル受信
+- **ニュース分析**: ML キーワードセンチメント + OpenAI 分析
+- **Backtrader**: RSI+MACD 戦略のバックテスト
+- **OANDA**: 成行注文（API 未設定時はペーパー取引）
+- **React ダッシュボード**: Next.js 統合 UI
+
+> API 層は Spring Boot ではなく **FastAPI** で実装しています（同等の REST API / BFF 役割）。
+
 ## セットアップ
 
 ### 前提条件
@@ -87,6 +96,11 @@ UI: http://localhost:3000
 | `DATABASE_URL` | PostgreSQL接続文字列 |
 | `DYNAMODB_ENDPOINT` | DynamoDB Local エンドポイント |
 | `FRED_API_KEY` | FRED APIキー（ファンダメンタルデータ取得用、任意） |
+| `OPENAI_API_KEY` | OpenAI APIキー（ニュース・AI分析用、任意） |
+| `OANDA_API_TOKEN` | OANDA v20 API トークン（任意） |
+| `OANDA_ACCOUNT_ID` | OANDA 口座 ID（任意） |
+| `OANDA_ENVIRONMENT` | `practice` または `live` |
+| `TRADINGVIEW_WEBHOOK_SECRET` | TradingView Webhook 認証用（任意） |
 
 FRED APIキーは https://fred.stlouisfed.org/docs/api/api_key.html から無料取得できます。未設定時はサンプルデータが使用されます。
 
@@ -103,6 +117,13 @@ FRED APIキーは https://fred.stlouisfed.org/docs/api/api_key.html から無料
 | GET | `/api/fundamental` | ファンダメンタルデータ |
 | GET | `/api/fundamental/calendar` | 経済イベントカレンダー |
 | GET | `/api/ml/predict/{symbol}` | ML価格予測 |
+| POST | `/api/tradingview/webhook` | TradingView アラート Webhook |
+| GET | `/api/tradingview/signals` | 受信シグナル一覧 |
+| GET | `/api/news/analysis/{symbol}` | ML + OpenAI ニュース分析 |
+| GET | `/api/backtest/backtrader/{symbol}` | Backtrader バックテスト |
+| GET | `/api/oanda/status` | OANDA 口座状態 |
+| GET/POST | `/api/oanda/orders` | 注文一覧 / 成行注文 |
+| GET | `/api/dashboard` | 統合ダッシュボード BFF |
 
 ## プロジェクト構成
 
@@ -111,6 +132,12 @@ fx/
 ├── backend/
 │   ├── src/
 │   │   ├── analysis/       # テクニカル・ファンダメンタル分析
+│   │   ├── api/            # ダッシュボード BFF
+│   │   ├── backtest/       # Backtrader
+│   │   ├── broker/         # OANDA 注文
+│   │   ├── tradingview/    # Webhook シグナル
+│   ├── pine/               # Pine Script サンプル
+│   ├── src/
 │   │   ├── data/           # サンプルデータ生成
 │   │   ├── db/             # PostgreSQL + DynamoDB
 │   │   ├── ml/             # 機械学習モデル
@@ -148,6 +175,9 @@ fx/
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
 | `OPENAI_API_KEY` | Railway に登録した OpenAI API キー |
 | `OPENAI_MODEL` | `gpt-4o-mini`（任意） |
+| `OANDA_API_TOKEN` | OANDA practice/live トークン（任意） |
+| `OANDA_ACCOUNT_ID` | OANDA 口座 ID（任意） |
+| `TRADINGVIEW_WEBHOOK_SECRET` | Webhook 認証（任意） |
 
 > DynamoDB は未使用（インメモリキャッシュ）。`NEXT_PUBLIC_API_URL` は未設定で OK（同一オリジン）。
 
@@ -161,4 +191,11 @@ fx/
 | `GET /api/ai/risk/{symbol}` | リスク管理 |
 | `GET /api/ai/report/{symbol}` | 総合レポート |
 
-UI: `/ai`
+UI: `/ai` · 統合ダッシュボード: `/dashboard`
+
+### TradingView 連携
+
+1. `backend/pine/fx_webhook_strategy.pine` を TradingView に貼り付け
+2. アラート作成 → Webhook URL: `https://<your-host>/api/tradingview/webhook`
+3. メッセージに JSON（Pine 内の `alert()` 参照）
+4. `TRADINGVIEW_WEBHOOK_SECRET` 設定時はヘッダー `X-Webhook-Secret` または JSON の `secret` を送信

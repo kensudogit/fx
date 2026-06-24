@@ -6,8 +6,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const STORAGE_KEY = 'fx-tool-usage-guide-v1'
-const PANEL_WIDTH = 420
+const STORAGE_KEY = 'fx-tool-usage-guide-v2'
+const PANEL_WIDTH = 440
 
 type GuideStep = {
   title: string
@@ -20,7 +20,7 @@ type FeaturedBlock = {
   title: string
   body: string
   items?: readonly string[]
-  variant?: 'architecture' | 'ai' | 'default'
+  variant?: 'architecture' | 'ai' | 'technical' | 'fundamental' | 'default'
 }
 
 const architectureFeatured: FeaturedBlock = {
@@ -35,6 +35,37 @@ const architectureFeatured: FeaturedBlock = {
     'PostgreSQL — OHLCV キャッシュ · 経済イベント',
     'Railway 統合デプロイ — 外部公開は Next.js の PORT のみ',
     '/health — 生存確認 · /docs — Swagger API リファレンス',
+  ],
+}
+
+const technicalFeatured: FeaturedBlock = {
+  badge: 'Technical',
+  title: 'テクニカル分析画面（/）の操作',
+  body:
+    '画面上部のコントロールで通貨ペア・期間を選び、チャートタブと右側のシグナルパネルで売買判断の材料を確認します。初回やデータが古い場合は必ず「データ同期」を実行してください。',
+  variant: 'technical',
+  items: [
+    '通貨ペア — 画面上部のドロップダウン（USDJPY / EURUSD / GBPUSD 等）',
+    '期間 — 90日 / 200日 / 365日（ローソク足の本数。中期トレンドは 200 日推奨）',
+    'データ同期 — Yahoo Finance から最新 OHLCV を取得し DB に保存 → チャート再描画',
+    'チャート画像 — 別タブで静的チャートを開く（プレゼン資料用）',
+    'サマリー — 終値 · RSI(14) · MACD · ML予測価格 · モデル精度(R²)',
+    'シグナルパネル — 各指標の買い/売りと総合判断（買い優勢 / 売り優勢 / 中立）',
+  ],
+}
+
+const fundamentalFeatured: FeaturedBlock = {
+  badge: 'Fundamental',
+  title: 'ファンダメンタル分析画面（/fundamental）',
+  body:
+    '左カラムで主要指標の履歴を、右カラムで今後のイベントカレンダーを確認します。発表前後のボラティリティ想定や、AI 分析の前提知識として活用します。',
+  variant: 'fundamental',
+  items: [
+    '経済指標タブ — 米国雇用統計 · CPI · FOMC · 日銀政策決定会合 · GDP',
+    '指標テーブル — 日付 / 実績 / 予想 / 前回 / 単位（FRED API またはサンプル）',
+    'イベントカレンダー — 日付 / イベント名 / 国 / 影響度（高・中）',
+    '発表前 — 予想と前回の乖離を確認し、サプライズの方向を想定',
+    '発表後 — 実績が予想を上回るか下回るかで通貨の方向性を判断',
   ],
 }
 
@@ -74,6 +105,198 @@ Next.js :PORT (Railway)
               ├─ PostgreSQL (ohlcv_data)
               └─ OpenAI API (news · trade · risk)`
 
+type GuideSection = {
+  label: string
+  steps: readonly GuideStep[]
+}
+
+const guideSections: readonly GuideSection[] = [
+  {
+    label: 'クイックスタート',
+    steps: [
+      {
+        title: 'パネル操作・画面遷移',
+        body: '本パネルは全画面で表示されます。ヘッダーをドラッグして位置を変更でき、▼▲ で折りたたみ可能です。',
+        items: [
+          '画面上部ナビ — 「テクニカル分析」「ファンダメンタル分析」「AI分析」で画面切替',
+          '本パネル — 右下付近に表示（位置・開閉状態はブラウザに自動保存）',
+          '推奨フロー — テクニカル → ファンダ → AI の順で多角的に確認',
+          'プレゼン時 — パネルを画面端に寄せ、メイン画面を広く使う',
+        ],
+      },
+      {
+        title: '接続確認（最初に）',
+        body: '本番・ローカル共通。障害切り分けとプレゼン前チェックの起点です。',
+        items: [
+          '本番 URL: https://fx-production-f5d5.up.railway.app/',
+          '/health — Web + API 生存確認（200 OK）',
+          'AI分析画面 — 「接続準備完了」バッジで OpenAI キー設定を確認',
+          'Swagger: /docs — 全エンドポイント一覧・試験呼び出し',
+        ],
+      },
+      {
+        title: '初回セットアップ（5 分）',
+        body: '初めて使う場合、またはチャートが空の場合の最短手順です。',
+        items: [
+          '① テクニカル分析を開く → 通貨ペア USDJPY · 期間 200日 を選択',
+          '②「データ同期」をクリック（完了まで数秒〜数十秒）',
+          '③ チャートにローソク足が表示されることを確認',
+          '④ 右のシグナルパネルで買い/売りシグナルが出ているか確認',
+          '⑤ ファンダメンタル → AI分析 へ進み、統合レポートを実行',
+        ],
+      },
+    ],
+  },
+  {
+    label: 'テクニカル分析 詳細',
+    steps: [
+      {
+        title: 'チャートタブの使い分け',
+        body: 'メインチャート下部の 6 タブを切り替えて、局面に応じた指標を確認します。',
+        items: [
+          '価格 + MA — 5 / 25 / 75 日移動平均線。トレンド方向とクロスを確認',
+          'ボリンジャーバンド — 中心線 ±2σ。バンド幅の収縮（スクイーズ）後のブレイクに注目',
+          '一目均衡表 — 雲の厚み・価格と雲の位置関係。転換線と基準線のクロス',
+          'RSI — 0〜100 のオシレーター。70 超=過熱、30 未満=売られすぎ',
+          'MACD — MACD 線とシグナル線のクロス、ヒストグラムのゼロライン突破',
+          'ストキャスティクス — %K / %D。80 超・20 未満とクロスでタイミング判断',
+        ],
+      },
+      {
+        title: 'シグナルパネルの読み方',
+        body: 'チャート右側「トレードシグナル」カードで、各指標の判定理由を確認できます。',
+        items: [
+          '現在価格 — 直近終値（シグナル算出の基準価格）',
+          '総合判断 — 買いシグナル数 vs 売りシグナル数で「買い優勢 / 売り優勢 / 中立」',
+          '個別シグナル — 指標名 · 買い/売りバッジ · 数値 · 判定理由テキスト',
+          '使い方 — 単一指標より複数指標の一致（コンフルエンス）を重視',
+          '注意 — レンジ相場ではシグナルが頻繁に反転するため、ファンダと併用',
+        ],
+      },
+      {
+        title: 'ML 予測の見方',
+        body: 'RandomForest による翌営業日の価格方向の参考値です。最終判断の補助として使用してください。',
+        items: [
+          'ML予測価格 — サマリー欄に表示（status=success の場合のみ）',
+          'モデル精度 (R²) — 1 に近いほど学習データへの適合度が高い',
+          'データ不足時 — 先に「データ同期」を実行（最低 90 日分推奨）',
+          '位置づけ — テクニカル・ファンダ・AI と合わせた「第 4 の視点」として説明',
+        ],
+      },
+    ],
+  },
+  {
+    label: 'ファンダメンタル 詳細',
+    steps: [
+      {
+        title: '経済指標タブ別の確認ポイント',
+        body: '左カラムのタブで指標種別を切り替え、実績と予想の乖離を確認します。',
+        items: [
+          '米国雇用統計 — 非農業部門雇用者数。ドル全体の方向感に直結',
+          'CPI — インフレ指標。利下げ/利上げ観測とドル円に影響',
+          'FOMC — 金利政策・声明文。ドル流動性とリスクオン/オフの転換点',
+          '日銀政策決定会合 — 円金利・介入観測。USDJPY の決済通貨側分析に必須',
+          'GDP — 成長率の加速/減速。中期的な通貨強弱の背景材料',
+        ],
+      },
+      {
+        title: 'イベントカレンダーの活用法',
+        body: '右カラムで今後の重要イベントを日付順に確認し、ポジション保有時のリスク管理に使います。',
+        items: [
+          '影響度「高」— 発表前後 30 分はスプレッド拡大・スリッページに注意',
+          '複数イベント同日 — ボラティリティが重なる日はロット縮小を検討',
+          'AI 分析前 — 直近の高影響イベントを把握してから統合レポートを実行',
+        ],
+      },
+    ],
+  },
+  {
+    label: 'AI 分析 詳細',
+    steps: [
+      {
+        title: 'AI 分析画面の基本操作（/ai）',
+        body: '画面上部で通貨ペアと口座残高を設定し、タブごとに「AI分析を実行」で結果を取得します。',
+        items: [
+          '通貨ペア — テクニカル画面と同じドロップダウン',
+          '口座残高（USD）— リスク管理・総合レポートタブで使用（デフォルト 10,000）',
+          'ステータスバッジ —「接続準備完了」/「OPENAI_API_KEY が未設定です」',
+          '分析時間 — 通常 30 秒〜1 分（統合レポートは最長）',
+        ],
+      },
+      {
+        title: 'タブ別 — 表示内容と読み方',
+        body: '5 つのタブそれぞれの出力項目と、プレゼンでの説明ポイントです。',
+        items: [
+          '総合レポート — 売買判断 + ニュース + ファンダ AI + リスクを一画面表示（推奨）',
+          'ニュース収集 — センチメント（強気/弱気/中立）· スコア · 要約 · 記事リンク一覧',
+          '経済指標分析 — ペアバイアス · 信頼度% · 基軸/決済通貨分析 · 主要指標テーブル',
+          '売買判断 — 買い/売り/様子見 · 信頼度 · エントリー/利確/損切り · RR比 · 根拠文',
+          'リスク管理 — リスクレベル · 推奨ポジション% · 最大損失 · 推奨/回避条件リスト',
+        ],
+      },
+      {
+        title: '推奨デモフロー（プレゼン 10 分）',
+        body: 'FX 専門家向けの実演順序。口座残高は実際の運用イメージに合わせて変更してください。',
+        items: [
+          '① /ai を開き、USDJPY · 口座残高 10,000 USD を設定',
+          '②「総合レポート」タブを選択 →「AI分析を実行」',
+          '③ 売買判断カード — 判断・信頼度・エントリー/利確/損切りを説明',
+          '④ ニュース要約 — センチメントとキートピックで市場心理を補足',
+          '⑤ リスク管理 — 推奨ポジションサイズと「避けるべき条件」を強調',
+          '⑥ Q&A — ML/AI は補助。最終判断はトレーダーの責任である旨を明記',
+        ],
+      },
+    ],
+  },
+  {
+    label: 'トラブルシュート・運用',
+    steps: [
+      {
+        title: 'よくあるエラーと対処',
+        body: '画面に赤いエラーバナーが出た場合の確認手順です。',
+        items: [
+          'データ取得に失敗 —「データ同期」を再実行。Yahoo Finance の一時障害の可能性',
+          'AI分析に失敗 — OPENAI_API_KEY の設定・残高・レート制限を確認',
+          '/health が 503 — Railway 再デプロイ。DATABASE_URL の Reference 変数を確認',
+          'チャートが空 — 同期未実施、または選択期間のデータが DB に無い',
+        ],
+      },
+      {
+        title: 'API エンドポイント（開発者向け）',
+        body: '/docs から Swagger UI で試験可能。バックテスト・外部連携に利用します。',
+        items: [
+          'GET /api/symbols — 利用可能通貨ペア一覧',
+          'POST /api/data/sync/{symbol}?days=200 — 市場データ同期',
+          'GET /api/technical/{symbol} — 全指標計算結果',
+          'GET /api/technical/{symbol}/signals — 売買シグナル配列',
+          'GET /api/ml/predict/{symbol} — ML 価格方向予測',
+          'GET /api/ai/report/{symbol}?balance=10000 — AI 統合レポート',
+        ],
+      },
+      {
+        title: 'Railway 本番・ローカル開発',
+        body: 'デプロイとローカル起動の参考情報です。',
+        items: [
+          '本番 — GitHub 連携 · DATABASE_URL · OPENAI_API_KEY · /health チェック',
+          'ローカル — docker compose up -d → backend :8000 → frontend npm run dev :3000',
+          '環境変数 — DATABASE_URL · OPENAI_API_KEY · OPENAI_MODEL=gpt-4o-mini',
+        ],
+      },
+      {
+        title: 'プレゼン向け 15 分シナリオ',
+        body: 'FX 専門家向け推奨トークトラック（本パネルを横に開いたまま実演可能）。',
+        items: [
+          '0–2分: 本パネルでアーキテクチャ・サービストポロジを概要説明',
+          '2–6分: テクニカル — USDJPY·200日·データ同期·一目均衡表·シグナル',
+          '6–9分: ファンダ — FOMC/雇用統計タブとイベントカレンダー',
+          '9–13分: AI — 総合レポート実行·売買判断とリスク管理',
+          '13–15分: /docs で API 拡張性 · バックテスト連携の可能性',
+        ],
+      },
+    ],
+  },
+]
+
 const L = {
   title: '利用手順',
   subtitle: 'Architecture & Ops',
@@ -85,115 +308,10 @@ const L = {
     'テクニカル × ファンダメンタル × OpenAI。通貨ペアの多角的分析と売買判断支援を 1 画面群で提供します。',
   stackLabel: 'Tech stack',
   diagramLabel: 'Service topology',
-  scrollHint: '↓ 分析ワークフロー・デモ手順は下へ',
+  workflowLabel: '詳細利用手順',
+  scrollHint: '↓ 画面別の詳細手順・デモフローは下へ',
   footer:
     '▼▲ で開閉 · ヘッダーをドラッグして移動 · 表示位置は自動保存されます。',
-  steps: [
-    {
-      title: '1. 接続確認（最初に）',
-      body: '本番・ローカル共通。障害切り分けとプレゼン前チェックの起点です。',
-      items: [
-        '本番: https://fx-production-f5d5.up.railway.app/',
-        '/health — Web + API 生存確認（200 OK）',
-        '/api/ai/status — OpenAI API キー設定の有無',
-        'Swagger: /docs — 全エンドポイント一覧',
-      ],
-    },
-    {
-      title: '2. テクニカル分析（/）',
-      body: 'OHLCV チャート上で主要テクニカル指標を切り替え、複合シグナルと ML 予測を確認します。',
-      items: [
-        '通貨ペア選択 — USDJPY / EURUSD / GBPUSD 等',
-        '期間 — 90 / 200 / 365 日（ローソク足本数）',
-        '「データ同期」— Yahoo Finance → PostgreSQL へ最新足を取得',
-        'タブ: 価格+MA · ボリンジャー · 一目均衡表 · RSI · MACD · ストキャス',
-        'シグナルパネル — 各指標の買い/売り/中立を一覧表示',
-        'ML 予測 — RandomForest による翌日方向の参考値',
-      ],
-    },
-    {
-      title: '3. 指標の読み方（テクニカル）',
-      body: 'FX 専門家向け — 各指標が何を示すか、シグナル判定の考え方。',
-      items: [
-        'MA（5/25/75）— 短期・中期・長期トレンド。ゴールデン/デッドクロス',
-        'ボリンジャーバンド — ±2σ。バンドタッチ・スクイーズでボラティリティ判断',
-        '一目均衡表 — 雲（先行スパン）の上下でトレンド方向、転換線/基準線クロス',
-        'RSI(14) — 70 超過買い / 30 未満売られすぎ。ダイバージェンスに注意',
-        'MACD — シグナル線クロス、ヒストグラムのゼロライン',
-        'ストキャス(14,3) — %K/%D のクロスと 80/20 水準',
-      ],
-    },
-    {
-      title: '4. ファンダメンタル分析（/fundamental）',
-      body: '主要経済指標イベントと通貨への影響をカレンダー形式で確認します。',
-      items: [
-        '対象イベント — 米雇用統計 · CPI · FOMC · 日銀政策 · GDP',
-        '重要度（高/中/低）と予想値・前回値の比較',
-        '通貨ペア別の影響方向（ドル高/円高 等）のラベル表示',
-        '/api/fundamental — JSON API（他ツール連携用）',
-        '/api/fundamental/calendar — 日付順イベント一覧',
-      ],
-    },
-    {
-      title: '5. AI 分析（/ai）— 推奨デモフロー',
-      body: 'OpenAI 連携が有効な場合のプレゼン向け操作順序。口座残高はリスク計算に使用します。',
-      items: [
-        '① 通貨ペア・口座残高（USD）を設定',
-        '②「統合レポート」タブ → 分析実行（全要素を一括取得）',
-        '③ ニュース — センチメント・要約・関連ヘッドライン',
-        '④ ファンダ AI — 直近イベントの影響度と方向性',
-        '⑤ 売買判断 — buy/sell/hold · 信頼度 · エントリー/利確/損切り案',
-        '⑥ リスク — 推奨ロット · リスク% · 最大ドローダウン想定',
-        'OPENAI_API_KEY 未設定時はルールベースのフォールバック表示',
-      ],
-    },
-    {
-      title: '6. API エンドポイント（開発者向け）',
-      body: '外部システム連携・バックテスト用。同一オリジンまたは /docs から試験可能。',
-      items: [
-        'GET /api/symbols — 利用可能通貨ペア一覧',
-        'POST /api/data/sync/{symbol}?days=200 — 市場データ同期',
-        'GET /api/technical/{symbol} — 全指標計算結果',
-        'GET /api/technical/{symbol}/signals — 売買シグナル配列',
-        'GET /api/ml/predict/{symbol} — ML 価格方向予測',
-        'GET /api/ai/report/{symbol}?balance=10000 — AI 統合レポート',
-      ],
-    },
-    {
-      title: '7. ローカル開発',
-      body: 'PostgreSQL（port 5433）+ バックエンド + フロントを個別起動する場合。',
-      items: [
-        'docker compose up -d — PostgreSQL + DynamoDB Local',
-        'backend: pip install -r requirements.txt → python run.py (:8000)',
-        'frontend: npm install → npm run dev (:3000)',
-        '.env — DATABASE_URL · OPENAI_API_KEY · OPENAI_MODEL',
-        'フロントの next.config.ts が /api/* を :8000 にプロキシ',
-      ],
-    },
-    {
-      title: '8. Railway 本番デプロイ',
-      body: 'GitHub 連携の統合 Docker イメージ。1 サービスで Next.js + FastAPI を起動。',
-      items: [
-        'リポジトリ: github.com/kensudogit/fx',
-        '環境変数 — DATABASE_URL（Postgres プラグイン）',
-        'OPENAI_API_KEY · OPENAI_MODEL=gpt-4o-mini（任意）',
-        'railway.toml — healthcheckPath: /health',
-        'デプロイ後 → /health OK → /ai で AI ステータス確認',
-      ],
-    },
-    {
-      title: '9. プレゼン向けデモシナリオ（15 分）',
-      body: 'FX 専門家向け推奨トークトラック。質疑用のポイント付き。',
-      items: [
-        '0–2分: 利用手順パネルでアーキテクチャ概要（本パネル）',
-        '2–6分: USDJPY · 200日 → データ同期 → 一目均衡表 + シグナル説明',
-        '6–9分: ファンダページで直近 FOMC / 雇用統計の影響を確認',
-        '9–13分: AI 統合レポート実行 → 売買判断とリスクを実演',
-        '13–15分: /docs で API 拡張性 · バックテスト連携の可能性を説明',
-        'Q&A: ML は補助、最終判断はファンダ+テクニカル+AI の合議という位置づけ',
-      ],
-    },
-  ] satisfies readonly GuideStep[],
 } as const
 
 type SavedState = {
@@ -205,7 +323,7 @@ type SavedState = {
 function defaultPosition() {
   if (typeof window === 'undefined') return { x: 24, y: 24 }
   const x = Math.max(16, window.innerWidth - PANEL_WIDTH - 24)
-  const y = Math.max(72, window.innerHeight - 480)
+  const y = Math.max(72, window.innerHeight - 520)
   return { x, y }
 }
 
@@ -390,24 +508,32 @@ export function UsageGuidePanel() {
             <pre>{archDiagram}</pre>
           </figure>
 
+          <FeaturedSection block={technicalFeatured} />
+          <FeaturedSection block={fundamentalFeatured} />
           <FeaturedSection block={aiFeatured} />
 
           <p className="usage-guide-scroll-hint">{L.scrollHint}</p>
-          <ol className="usage-guide-steps">
-            {L.steps.map((step) => (
-              <li key={step.title}>
-                <strong>{step.title}</strong>
-                <p>{step.body}</p>
-                {step.items?.length ? (
-                  <ul className="usage-guide-items">
-                    {step.items.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                ) : null}
-              </li>
-            ))}
-          </ol>
+          <h3 className="usage-guide-workflow-title">{L.workflowLabel}</h3>
+          {guideSections.map((section) => (
+            <div key={section.label} className="usage-guide-section">
+              <p className="usage-guide-section-label">{section.label}</p>
+              <ol className="usage-guide-steps">
+                {section.steps.map((step) => (
+                  <li key={step.title}>
+                    <strong>{step.title}</strong>
+                    <p>{step.body}</p>
+                    {step.items?.length ? (
+                      <ul className="usage-guide-items">
+                        {step.items.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
           <p className="usage-guide-footer">{L.footer}</p>
         </div>
       ) : null}

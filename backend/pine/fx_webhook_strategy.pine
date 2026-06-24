@@ -1,0 +1,23 @@
+//@version=5
+strategy("FX Tool Webhook", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+rsiLen = input.int(14, "RSI Length")
+rsiLow = input.int(30, "RSI Oversold")
+rsiHigh = input.int(70, "RSI Overbought")
+webhookUrl = input.string("https://your-app.up.railway.app/api/tradingview/webhook", "Webhook URL")
+
+rsi = ta.rsi(close, rsiLen)
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+
+longCond = ta.crossover(rsi, rsiLow) and macdLine > signalLine
+shortCond = ta.crossunder(rsi, rsiHigh) and macdLine < signalLine
+
+if longCond
+    strategy.entry("Long", strategy.long)
+    alert('{"symbol":"' + syminfo.ticker + '","action":"buy","price":' + str.tostring(close) + ',"strategy":"FX Tool RSI+MACD"}', alert.freq_once_per_bar_close)
+
+if shortCond
+    strategy.entry("Short", strategy.short)
+    alert('{"symbol":"' + syminfo.ticker + '","action":"sell","price":' + str.tostring(close) + ',"strategy":"FX Tool RSI+MACD"}', alert.freq_once_per_bar_close)
+
+plot(rsi, "RSI", display=display.none)
