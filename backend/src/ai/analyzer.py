@@ -93,12 +93,12 @@ async def analyze_fundamentals(symbol: str) -> dict:
     calendar = get_upcoming_events()
 
     relevant_events = {}
-    for key, data in fund_data["events"].items():
+    for key, data in fund_data.items():
         try:
             label = EVENT_LABELS[EventType(key)]
         except ValueError:
-            label = key
-        relevant_events[label] = data["data"][:3]
+            label = data.get("label", key)
+        relevant_events[label] = data.get("data", [])[:3]
 
     result = await asyncio.to_thread(
         chat_json,
