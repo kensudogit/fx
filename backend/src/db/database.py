@@ -3,8 +3,6 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-import boto3
-from botocore.exceptions import ClientError
 from sqlalchemy import (
     Column,
     Date,
@@ -108,6 +106,8 @@ class DynamoDBClient:
     TABLE_NAME = "fx_analysis_cache"
 
     def __init__(self):
+        import boto3
+
         endpoint = settings.dynamodb_endpoint
         if not endpoint:
             raise RuntimeError("DynamoDB endpoint not configured")
@@ -125,6 +125,8 @@ class DynamoDBClient:
         self._ensure_table()
 
     def _ensure_table(self):
+        from botocore.exceptions import ClientError
+
         try:
             self.client.create_table(
                 TableName=self.TABLE_NAME,
