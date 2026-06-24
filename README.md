@@ -124,5 +124,33 @@ fx/
 │       ├── lib/            # API クライアント
 │       └── types/          # TypeScript 型定義
 ├── docker-compose.yml
+├── Dockerfile              # Railway バックエンド用（リポジトリルート）
+├── Dockerfile.frontend     # Railway フロントエンド用（リポジトリルート）
+├── railway.toml            # Railway バックエンド設定
 └── .env.example
 ```
+
+## Railway デプロイ
+
+### サービス構成
+
+| サービス | Root Directory | Dockerfile |
+|---------|----------------|------------|
+| backend | `/`（リポジトリルート） | `Dockerfile` |
+| frontend | `frontend` | `Dockerfile` |
+| Postgres | — | Railway プラグイン |
+
+### 環境変数
+
+**backend**
+| 変数 | 値 |
+|------|-----|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+| `CORS_ORIGINS` | フロントエンドの Railway URL |
+
+**frontend**
+| 変数 | 値 |
+|------|-----|
+| `NEXT_PUBLIC_API_URL` | バックエンドの Railway URL |
+
+> DynamoDB は Railway では未使用（インメモリキャッシュに自動フォールバック）
