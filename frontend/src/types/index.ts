@@ -100,3 +100,78 @@ export interface MLPrediction {
   model?: string;
   message?: string;
 }
+
+export interface NewsArticle {
+  title: string;
+  url: string;
+  published_at: string;
+  source: string;
+}
+
+export interface AINewsAnalysis {
+  symbol: string;
+  collected_at?: string;
+  articles: NewsArticle[];
+  summary: string;
+  sentiment: "bullish" | "bearish" | "neutral";
+  sentiment_score: number;
+  key_topics: string[];
+  market_impact: string;
+  currency_outlook?: { base: string; quote: string };
+}
+
+export interface AIFundamentalAnalysis {
+  symbol: string;
+  overview: string;
+  base_currency_analysis: string;
+  quote_currency_analysis: string;
+  key_indicators: { name: string; impact: string; comment: string }[];
+  upcoming_risks: string[];
+  pair_bias: string;
+  confidence: number;
+}
+
+export interface AITradingDecision {
+  symbol: string;
+  current_price: number;
+  action: "buy" | "sell" | "hold";
+  confidence: number;
+  entry_price: number;
+  take_profit: number;
+  stop_loss: number;
+  timeframe: string;
+  reasoning: string;
+  technical_view: string;
+  fundamental_view: string;
+  news_view: string;
+  risk_reward_ratio: number;
+  warnings: string[];
+}
+
+export interface AIRiskAssessment {
+  symbol: string;
+  account_balance: number;
+  current_price: number;
+  risk_level: string;
+  risk_score: number;
+  position_size_percent: number;
+  position_size_usd: number;
+  max_loss_percent: number;
+  max_loss_usd: number;
+  recommended_leverage: number;
+  stop_loss_price: number;
+  take_profit_price: number;
+  risk_reward_ratio: number;
+  volatility_assessment: string;
+  market_conditions: string;
+  recommendations: string[];
+  do_not_trade_if: string[];
+}
+
+export interface AIFullReport {
+  symbol: string;
+  news: AINewsAnalysis;
+  fundamentals: AIFundamentalAnalysis;
+  trading_decision: AITradingDecision;
+  risk_management: AIRiskAssessment;
+}

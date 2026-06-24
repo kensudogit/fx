@@ -319,3 +319,40 @@ main {
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }
+
+.news-list {
+  list-style: none;
+  padding: 0;
+}
+
+.news-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.news-list a {
+  color: var(--text-primary);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.news-list a:hover {
+  color: var(--accent);
+}
+
+.news-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.bullet-list {
+  padding-left: 1.25rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.badge-hold {
+  background: rgba(139, 156, 179, 0.2);
+  color: var(--text-secondary);
+}

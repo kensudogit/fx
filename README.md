@@ -146,5 +146,19 @@ fx/
 | 変数 | 値 |
 |------|-----|
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+| `OPENAI_API_KEY` | Railway に登録した OpenAI API キー |
+| `OPENAI_MODEL` | `gpt-4o-mini`（任意） |
 
 > DynamoDB は未使用（インメモリキャッシュ）。`NEXT_PUBLIC_API_URL` は未設定で OK（同一オリジン）。
+
+### AI 分析機能（OpenAI）
+
+| エンドポイント | 機能 |
+|---|---|
+| `GET /api/ai/news/{symbol}` | ニュース収集・センチメント分析 |
+| `GET /api/ai/fundamental-analysis/{symbol}` | 経済指標 AI 分析 |
+| `GET /api/ai/trading-decision/{symbol}` | 売買判断 |
+| `GET /api/ai/risk/{symbol}` | リスク管理 |
+| `GET /api/ai/report/{symbol}` | 総合レポート |
+
+UI: `/ai`

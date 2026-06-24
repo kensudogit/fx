@@ -16,6 +16,13 @@ from src.data.market_data import get_ohlcv_data, sync_symbol_data
 from src.data.sample_data import SYMBOL_BASE_PRICES
 from src.db.database import dynamodb_client, init_database
 from src.ml.deep_learning import check_ml_frameworks
+from src.ai.analyzer import (
+    analyze_fundamentals,
+    assess_risk,
+    generate_full_report,
+    make_trading_decision,
+)
+from src.ai.news import analyze_news
 from src.config import settings
 from src.ml.predictor import train_price_predictor
 
@@ -29,7 +36,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="FX Tool API",
     description="テクニカル分析・ファンダメンタル分析 API",
-    version="1.2.0",
+    version="1.3.0",
     lifespan=lifespan,
 )
 
@@ -243,6 +250,14 @@ async def get_calendar():
     return {"events": get_upcoming_events()}
 
 
+def _require_openai():
+    if not settings.openai_api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="OPENAI_API_KEY が未設定です。Railway の環境変数に登録してください。",
+        )
+
+
 @app.get("/api/ml/predict/{symbol}")
 async def predict_price(symbol: str, days: int = Query(default=200, ge=50, le=500)):
     symbol = _validate_symbol(symbol)
@@ -251,3 +266,71 @@ async def predict_price(symbol: str, days: int = Query(default=200, ge=50, le=50
     prediction = train_price_predictor(result_df)
 
     return {"symbol": symbol, "source": source, **prediction}
+
+
+@app.get("/api/ai/news/{symbol}")
+async def ai_news(symbol: str, limit: int = Query(default=8, ge=3, le=15)):
+    _require_openai()
+    symbol = _validate_symbol(symbol)
+    try:
+        return await analyze_news(symbol, limit)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ニュース分析エラー: {e}")
+
+
+@app.get("/api/ai/fundamental-analysis/{symbol}")
+async def ai_fundamental_analysis(symbol: str):
+    _require_openai()
+    symbol = _validate_symbol(symbol)
+    try:
+        return await analyze_fundamentals(symbol)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"経済指標分析エラー: {e}")
+
+
+@app.get("/api/ai/trading-decision/{symbol}")
+async def ai_trading_decision(symbol: str, days: int = Query(default=200, ge=30, le=500)):
+    _require_openai()
+    symbol = _validate_symbol(symbol)
+    try:
+        return await make_trading_decision(symbol, days)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"売買判断エラー: {e}")
+
+
+@app.get("/api/ai/risk/{symbol}")
+async def ai_risk(
+    symbol: str,
+    days: int = Query(default=200, ge=30, le=500),
+    account_balance: float = Query(default=10000, ge=100),
+):
+    _require_openai()
+    symbol = _validate_symbol(symbol)
+    try:
+        return await assess_risk(symbol, days, account_balance)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"リスク管理エラー: {e}")
+
+
+@app.get("/api/ai/report/{symbol}")
+async def ai_full_report(
+    symbol: str,
+    days: int = Query(default=200, ge=30, le=500),
+    account_balance: float = Query(default=10000, ge=100),
+):
+    _require_openai()
+    symbol = _validate_symbol(symbol)
+    try:
+        return await generate_full_report(symbol, days, account_balance)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"レポート生成エラー: {e}")

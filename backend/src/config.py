@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     aws_secret_access_key: str = ""
 
     fred_api_key: str = ""
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+
     cors_origins: str = "http://localhost:3000"
     port: int = 8000
 

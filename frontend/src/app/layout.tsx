@@ -22,6 +22,7 @@ export default function RootLayout({
             <nav>
               <a href="/">テクニカル分析</a>
               <a href="/fundamental">ファンダメンタル分析</a>
+              <a href="/ai">AI分析</a>
             </nav>
           </div>
         </header>

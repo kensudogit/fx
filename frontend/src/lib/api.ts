@@ -61,3 +61,33 @@ export const SOURCE_LABELS: Record<string, string> = {
   yahoo_finance: "Yahoo Finance",
   sample: "サンプルデータ",
 };
+
+export async function getAINews(symbol: string): Promise<import("@/types").AINewsAnalysis> {
+  return fetchAPI(`/api/ai/news/${symbol}`);
+}
+
+export async function getAIFundamentalAnalysis(
+  symbol: string
+): Promise<import("@/types").AIFundamentalAnalysis> {
+  return fetchAPI(`/api/ai/fundamental-analysis/${symbol}`);
+}
+
+export async function getAITradingDecision(
+  symbol: string
+): Promise<import("@/types").AITradingDecision> {
+  return fetchAPI(`/api/ai/trading-decision/${symbol}`);
+}
+
+export async function getAIRisk(
+  symbol: string,
+  accountBalance = 10000
+): Promise<import("@/types").AIRiskAssessment> {
+  return fetchAPI(`/api/ai/risk/${symbol}?account_balance=${accountBalance}`);
+}
+
+export async function getAIReport(
+  symbol: string,
+  accountBalance = 10000
+): Promise<import("@/types").AIFullReport> {
+  return fetchAPI(`/api/ai/report/${symbol}?account_balance=${accountBalance}`);
+}
