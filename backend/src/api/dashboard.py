@@ -24,7 +24,10 @@ async def build_dashboard(symbol: str, days: int = 200) -> dict:
 
     mtf = analyze_multi_timeframe(symbol)
     simple_bt = backtest_signals(result_df)
-    bt = run_backtrader_backtest(symbol, days)
+    try:
+        bt = run_backtrader_backtest(symbol, days)
+    except Exception as e:
+        bt = {"status": "error", "message": str(e)}
 
     return {
         "symbol": symbol.upper(),
