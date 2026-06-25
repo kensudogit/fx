@@ -6,7 +6,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const STORAGE_KEY = 'fx-tool-usage-guide-v2'
+const STORAGE_KEY = 'fx-tool-usage-guide-v3'
 const PANEL_WIDTH = 440
 
 type GuideStep = {
@@ -20,7 +20,7 @@ type FeaturedBlock = {
   title: string
   body: string
   items?: readonly string[]
-  variant?: 'architecture' | 'ai' | 'technical' | 'fundamental' | 'default'
+  variant?: 'architecture' | 'ai' | 'technical' | 'fundamental' | 'analysis' | 'dashboard' | 'pro' | 'saas' | 'default'
 }
 
 const architectureFeatured: FeaturedBlock = {
@@ -30,10 +30,10 @@ const architectureFeatured: FeaturedBlock = {
     'フロントは同一オリジンで FastAPI にプロキシ。OHLCV は Yahoo Finance 取得 → PostgreSQL 永続化。AI 機能は OpenAI API をバックエンド経由で呼び出し、API キーをクライアントに露出しません。',
   variant: 'architecture',
   items: [
-    'Next.js — テクニカル / ファンダ / AI の 3 画面',
-    'FastAPI :8000 — 指標計算 · ML · OpenAI 統合',
-    'PostgreSQL — OHLCV キャッシュ · 経済イベント',
-    'Railway 統合デプロイ — 外部公開は Next.js の PORT のみ',
+    'Next.js — テクニカル / ファンダ / 分析 / AI / Pro / ダッシュボード',
+    'FastAPI :8000 — 指標計算 · ML · OpenAI · SaaS 認証',
+    'PostgreSQL — OHLCV · テナント · 注文 · チャット履歴',
+    'SaaS — JWT ログイン · プラン制 · API キー · 利用量トラッキング',
     '/health — 生存確認 · /docs — Swagger API リファレンス',
   ],
 }
@@ -71,9 +71,9 @@ const fundamentalFeatured: FeaturedBlock = {
 
 const aiFeatured: FeaturedBlock = {
   badge: 'AI Analysis',
-  title: 'OpenAI 統合 — ニュース〜リスクまで一気通貫',
+  title: 'OpenAI 統合 — ニュース〜リスクまで一気通貫（/ai）',
   body:
-    'テクニカル指標とファンダメンタルデータをコンテキストに、OpenAI がニュース要約・売買判断・ポジションサイズを提案。ML 予測（RandomForest）は補助シグナルとして併用。',
+    'テクニカル指標とファンダメンタルデータをコンテキストに、OpenAI がニュース要約・売買判断・ポジションサイズを提案。ステータスバッジで API キー接続を確認してから実行。',
   variant: 'ai',
   items: [
     'ニュース収集 — RSS + AI センチメント（強気 / 弱気 / 中立）',
@@ -84,26 +84,94 @@ const aiFeatured: FeaturedBlock = {
   ],
 }
 
+const analysisFeatured: FeaturedBlock = {
+  badge: 'Market Analysis',
+  title: 'マーケット分析（/analysis）— 5 カテゴリ統合',
+  body:
+    'トレンド予測・ニュース・SNS・経済指標・ボラティリティをタブで切り替え。「総合」タブでは複合スコア（-100〜100）で方向感を一覧できます。',
+  variant: 'analysis',
+  items: [
+    '総合 — 5分析の複合スコアと強気/弱気/中立の見通し',
+    'トレンド予測 — RandomForest + テクニカルルール + MTF',
+    'ニュース — Google News RSS + ML / OpenAI センチメント',
+    'SNS — Reddit 投稿のセンチメント・エンゲージメント',
+    '経済指標 — 雇用・CPI・FOMC 等のスコアリング',
+    'ボラ予測 — ATR 現状と将来ボラのレジーム判定',
+  ],
+}
+
+const dashboardFeatured: FeaturedBlock = {
+  badge: 'Dashboard',
+  title: '統合ダッシュボード（/dashboard）',
+  body:
+    'TradingView チャート・Webhook シグナル・ニュース ML・Backtrader・OANDA 注文を 1 画面に集約。実運用のコックピットとして利用します。',
+  variant: 'dashboard',
+  items: [
+    'TradingView — チャート埋め込み + Webhook でシグナル受信',
+    'Webhook URL — /api/tradingview/webhook（X-API-Key ヘッダー）',
+    'ニュース ML — ヘッドラインとセンチメントスコア',
+    'Backtrader — RSI+MACD 戦略のバックテスト結果',
+    'OANDA — 成行注文（未設定時はペーパー取引）',
+  ],
+}
+
+const aiProFeatured: FeaturedBlock = {
+  badge: 'AI Pro',
+  title: '差別化機能（/pro）— 7 つの AI 機能',
+  body:
+    'AI 売買シグナル・市場ブリーフ・コーチング・ウォークフォワード・高度リスク管理・口座一元管理・投資相談チャットを提供。差別化の核となる画面です。',
+  variant: 'pro',
+  items: [
+    'AIシグナル — テクニカル + ML + OpenAI の統合売買方向',
+    '市場ブリーフ — ニュース・SNS・経済指標の要約と市場影響',
+    'AIコーチング — 売買履歴から改善提案（履歴が多いほど精度向上）',
+    'バックテスト — 簡易BT + Backtrader + ウォークフォワード分析',
+    'リスク管理 — 最大DD・資金配分・損切り/利確提案',
+    '口座・通貨 — 複数口座と 4 通貨ペアの一元管理',
+    'AIチャット — 投資相談（セッション履歴付き）',
+  ],
+}
+
+const saasFeatured: FeaturedBlock = {
+  badge: 'SaaS',
+  title: 'アカウント・プラン・API キー',
+  body:
+    'マルチテナント対応。組織（テナント）単位でデータが分離され、プランに応じて日次 API 上限と機能が変わります。',
+  variant: 'saas',
+  items: [
+    '新規登録 — /register で組織名・メール・パスワードを設定',
+    'ログイン — /login → JWT が自動付与（未ログインはリダイレクト）',
+    '設定 — /settings でプラン変更・利用量・API キー発行',
+    '料金 — /pricing で Free / Pro / Enterprise を確認',
+    'API キー — TradingView Webhook 等に X-API-Key ヘッダーで利用',
+  ],
+}
+
 const techStack = [
   'Python · FastAPI',
   'Next.js 15 · Recharts',
-  'PostgreSQL',
+  'PostgreSQL · SaaS',
   'OpenAI gpt-4o-mini',
-  'Yahoo Finance',
-  'scikit-learn · Railway',
+  'Backtrader · scikit-learn',
+  'OANDA · TradingView',
+  'Yahoo Finance · Railway',
 ] as const
 
 const archDiagram = `Browser (FX Expert)
-    │ HTTPS
+    │ HTTPS + JWT / API Key
     ▼
 Next.js :PORT (Railway)
     ├─ /              テクニカル分析
     ├─ /fundamental   経済指標カレンダー
+    ├─ /analysis      マーケット分析（5カテゴリ）
     ├─ /ai            OpenAI 統合分析
+    ├─ /pro           AI Pro（差別化7機能）
+    ├─ /dashboard     統合ダッシュボード
+    ├─ /login · /register · /settings
     └─ /api/* ──proxy──► FastAPI :8000
               ├─ Yahoo Finance (OHLCV)
-              ├─ PostgreSQL (ohlcv_data)
-              └─ OpenAI API (news · trade · risk)`
+              ├─ PostgreSQL (tenant · orders · chat)
+              └─ OpenAI API (signals · brief · chat)`
 
 type GuideSection = {
   label: string
@@ -118,9 +186,9 @@ const guideSections: readonly GuideSection[] = [
         title: 'パネル操作・画面遷移',
         body: '本パネルは全画面で表示されます。ヘッダーをドラッグして位置を変更でき、▼▲ で折りたたみ可能です。',
         items: [
-          '画面上部ナビ — 「テクニカル分析」「ファンダメンタル分析」「AI分析」で画面切替',
+          '画面上部ナビ — テクニカル / ファンダ / マーケット分析 / AI / AI Pro / ダッシュボード / 料金 / 設定',
           '本パネル — 右下付近に表示（位置・開閉状態はブラウザに自動保存）',
-          '推奨フロー — テクニカル → ファンダ → AI の順で多角的に確認',
+          '推奨フロー — 登録 → テクニカル → 分析 → AI Pro → ダッシュボード',
           'プレゼン時 — パネルを画面端に寄せ、メイン画面を広く使う',
         ],
       },
@@ -130,7 +198,8 @@ const guideSections: readonly GuideSection[] = [
         items: [
           '本番 URL: https://fx-production-f5d5.up.railway.app/',
           '/health — Web + API 生存確認（200 OK）',
-          'AI分析画面 — 「接続準備完了」バッジで OpenAI キー設定を確認',
+          '/register — 初回はアカウント作成（組織名 = テナント）',
+          'AI分析画面 — 「接続準備完了」で OpenAI キー設定を確認',
           'Swagger: /docs — 全エンドポイント一覧・試験呼び出し',
         ],
       },
@@ -138,11 +207,12 @@ const guideSections: readonly GuideSection[] = [
         title: '初回セットアップ（5 分）',
         body: '初めて使う場合、またはチャートが空の場合の最短手順です。',
         items: [
-          '① テクニカル分析を開く → 通貨ペア USDJPY · 期間 200日 を選択',
-          '②「データ同期」をクリック（完了まで数秒〜数十秒）',
-          '③ チャートにローソク足が表示されることを確認',
-          '④ 右のシグナルパネルで買い/売りシグナルが出ているか確認',
-          '⑤ ファンダメンタル → AI分析 へ進み、統合レポートを実行',
+          '① /register でアカウント作成 → ログイン',
+          '② テクニカル分析 — USDJPY · 200日 · データ同期',
+          '③ /analysis でマーケット分析「総合」タブを確認',
+          '④ /pro で AIシグナル・市場ブリーフを実行',
+          '⑤ /dashboard で TradingView + Backtrader を確認',
+          '⑥ /settings で API キー発行（Webhook 連携用）',
         ],
       },
     ],
@@ -249,6 +319,59 @@ const guideSections: readonly GuideSection[] = [
     ],
   },
   {
+    label: 'AI Pro 詳細',
+    steps: [
+      {
+        title: 'AI Pro 画面の基本操作（/pro）',
+        body: '7 つの差別化機能をタブで切り替え。通貨ペアを選び「実行」で分析を開始します。',
+        items: [
+          'AIシグナル — 買い/売り/様子見 + 信頼度% + テクニカル根拠一覧',
+          '市場ブリーフ — ニュース・SNS・経済指標の統合要約（OpenAI）',
+          'AIコーチング — 過去の注文履歴から改善アドバイス',
+          'バックテスト — 簡易BT · Backtrader · ウォークフォワード（IS/OOS比較）',
+          'リスク管理 — 最大DD · 推奨ロット · 損切り/利確 · 通貨別資金配分',
+          '口座・通貨 — 複数口座と全通貨ペアの残高・価格・注文数',
+          'AIチャット — 投資相談（Enter で送信、履歴はセッション保存）',
+        ],
+      },
+      {
+        title: 'ウォークフォワードの読み方',
+        body: 'バックテストタブ内のウォークフォワードは、過学習を検出するための OOS 検証です。',
+        items: [
+          'IS（In-Sample）— 学習期間の勝率',
+          'OOS（Out-of-Sample）— 未知期間の勝率（こちらが重要）',
+          '堅牢 — IS/OOS 乖離が小さく OOS 勝率 45% 以上',
+          '弱い — 乖離大 → 戦略の過学習の可能性、パラメータ見直し',
+        ],
+      },
+    ],
+  },
+  {
+    label: 'SaaS・アカウント',
+    steps: [
+      {
+        title: 'アカウント登録とログイン',
+        body: '本番環境ではログイン必須です。未ログイン時は /login にリダイレクトされます。',
+        items: [
+          '/register — 組織名（テナント）・メール・パスワード（8文字以上）',
+          '/login — ログイン後 JWT がブラウザに保存',
+          'ログアウト — ヘッダー右上のボタン',
+          'JWT_SECRET — Railway 本番で必須（長いランダム文字列）',
+        ],
+      },
+      {
+        title: 'プランと API キー（/settings）',
+        body: 'Free プランでも AI 分析・マーケット分析は利用可能（日次 API 上限あり）。',
+        items: [
+          'Free — 100 API/日 · AI · 分析 · Webhook',
+          'Pro — 2,000 API/日 · OANDA 注文 · 統合インテリジェンス',
+          'API キー — 設定画面で発行 → TradingView Webhook に X-API-Key',
+          '利用量 — 設定画面で本日の API 消費量を確認',
+        ],
+      },
+    ],
+  },
+  {
     label: 'トラブルシュート・運用',
     steps: [
       {
@@ -257,7 +380,9 @@ const guideSections: readonly GuideSection[] = [
         items: [
           'データ取得に失敗 —「データ同期」を再実行。Yahoo Finance の一時障害の可能性',
           'AI分析に失敗 — OPENAI_API_KEY の設定・残高・レート制限を確認',
-          '/health が 503 — Railway 再デプロイ。DATABASE_URL の Reference 変数を確認',
+          '登録 500 エラー — Railway 再デプロイ · JWT_SECRET · DB 接続を確認',
+          'AI Pro プラン制限 — 403 の場合 /settings でプラン確認',
+          '/health が 503 — Railway 再デプロイ。DATABASE_URL を確認',
           'チャートが空 — 同期未実施、または選択期間のデータが DB に無い',
         ],
       },
@@ -267,30 +392,35 @@ const guideSections: readonly GuideSection[] = [
         items: [
           'GET /api/symbols — 利用可能通貨ペア一覧',
           'POST /api/data/sync/{symbol}?days=200 — 市場データ同期',
-          'GET /api/technical/{symbol} — 全指標計算結果',
-          'GET /api/technical/{symbol}/signals — 売買シグナル配列',
-          'GET /api/ml/predict/{symbol} — ML 価格方向予測',
+          'GET /api/analysis/intelligence/{symbol} — 5大分析統合',
+          'GET /api/pro/signals/{symbol} — AI 売買シグナル',
+          'GET /api/pro/market-brief/{symbol} — 市場ブリーフ',
+          'POST /api/pro/chat — AI 投資相談チャット',
+          'GET /api/pro/backtest/{symbol} — BT + ウォークフォワード',
           'GET /api/ai/report/{symbol}?balance=10000 — AI 統合レポート',
+          'POST /api/auth/register · /api/auth/login — SaaS 認証',
         ],
       },
       {
         title: 'Railway 本番・ローカル開発',
         body: 'デプロイとローカル起動の参考情報です。',
         items: [
-          '本番 — GitHub 連携 · DATABASE_URL · OPENAI_API_KEY · /health チェック',
+          '本番 — GitHub 連携 · DATABASE_URL · OPENAI_API_KEY · JWT_SECRET',
+          'SaaS — SAAS_ENABLED=true · NEXT_PUBLIC_SAAS_ENABLED=true',
           'ローカル — docker compose up -d → backend :8000 → frontend npm run dev :3000',
-          '環境変数 — DATABASE_URL · OPENAI_API_KEY · OPENAI_MODEL=gpt-4o-mini',
+          '環境変数 — OPENAI_API_KEY · OPENAI_MODEL=gpt-4o-mini · OANDA_*（任意）',
         ],
       },
       {
         title: 'プレゼン向け 15 分シナリオ',
         body: 'FX 専門家向け推奨トークトラック（本パネルを横に開いたまま実演可能）。',
         items: [
-          '0–2分: 本パネルでアーキテクチャ・サービストポロジを概要説明',
-          '2–6分: テクニカル — USDJPY·200日·データ同期·一目均衡表·シグナル',
-          '6–9分: ファンダ — FOMC/雇用統計タブとイベントカレンダー',
-          '9–13分: AI — 総合レポート実行·売買判断とリスク管理',
-          '13–15分: /docs で API 拡張性 · バックテスト連携の可能性',
+          '0–2分: 本パネルでアーキテクチャ・SaaS・サービストポロジを説明',
+          '2–5分: テクニカル — USDJPY·200日·データ同期·シグナル',
+          '5–7分: /analysis — 5カテゴリ分析と総合スコア',
+          '7–11分: /pro — AIシグナル・市場ブリーフ・ウォークフォワード',
+          '11–13分: /dashboard — TradingView + OANDA + Backtrader',
+          '13–15分: /ai 総合レポート · /settings APIキー · /docs',
         ],
       },
     ],
@@ -305,7 +435,7 @@ const L = {
   collapse: '閉じる',
   heroTitle: 'FX 分析プラットフォーム',
   heroLead:
-    'テクニカル × ファンダメンタル × OpenAI。通貨ペアの多角的分析と売買判断支援を 1 画面群で提供します。',
+    'テクニカル × ファンダメンタル × OpenAI × AI Pro。通貨ペアの多角的分析・売買判断・リスク管理を SaaS 上で提供します。',
   stackLabel: 'Tech stack',
   diagramLabel: 'Service topology',
   workflowLabel: '詳細利用手順',
@@ -510,7 +640,11 @@ export function UsageGuidePanel() {
 
           <FeaturedSection block={technicalFeatured} />
           <FeaturedSection block={fundamentalFeatured} />
+          <FeaturedSection block={analysisFeatured} />
           <FeaturedSection block={aiFeatured} />
+          <FeaturedSection block={aiProFeatured} />
+          <FeaturedSection block={dashboardFeatured} />
+          <FeaturedSection block={saasFeatured} />
 
           <p className="usage-guide-scroll-hint">{L.scrollHint}</p>
           <h3 className="usage-guide-workflow-title">{L.workflowLabel}</h3>
