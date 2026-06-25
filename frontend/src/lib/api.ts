@@ -80,6 +80,14 @@ export const SOURCE_LABELS: Record<string, string> = {
   sample: "サンプルデータ",
 };
 
+export async function getAIStatus(): Promise<{
+  configured: boolean;
+  model?: string;
+  key_preview?: string | null;
+}> {
+  return fetchAPI("/api/ai/status");
+}
+
 export async function getAINews(symbol: string): Promise<import("@/types").AINewsAnalysis> {
   return fetchAPI(`/api/ai/news/${symbol}`);
 }

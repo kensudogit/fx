@@ -12,12 +12,21 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _clean_api_key(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+        value = value[1:-1].strip()
+    return value
+
+
 def resolve_openai_api_key() -> str:
     """Railway 等で複数の環境変数名に対応"""
     if settings.openai_api_key:
-        return settings.openai_api_key.strip()
+        key = _clean_api_key(settings.openai_api_key)
+        if key:
+            return key
     for name in ("OPENAI_API_KEY", "OPENAI_KEY", "OPENAI_API_TOKEN"):
-        value = os.environ.get(name, "").strip()
+        value = _clean_api_key(os.environ.get(name, ""))
         if value:
             return value
     return ""

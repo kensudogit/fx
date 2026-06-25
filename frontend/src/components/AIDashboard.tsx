@@ -3,19 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   getSymbols,
+  getAIStatus,
   getAINews,
   getAIFundamentalAnalysis,
   getAITradingDecision,
   getAIRisk,
   getAIReport,
 } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
-async function checkAIStatus(): Promise<{ configured: boolean }> {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const res = await fetch(`${API_BASE}/api/ai/status`, { cache: "no-store" });
-  if (!res.ok) return { configured: false };
-  return res.json();
-}
 import type {
   AINewsAnalysis,
   AIFundamentalAnalysis,
@@ -46,6 +42,7 @@ const RISK_LABELS: Record<string, string> = {
 };
 
 export default function AIDashboard() {
+  const { session } = useAuth();
   const [symbols, setSymbols] = useState<string[]>([]);
   const [symbol, setSymbol] = useState("USDJPY");
   const [accountBalance, setAccountBalance] = useState(10000);
@@ -62,7 +59,9 @@ export default function AIDashboard() {
 
   useEffect(() => {
     getSymbols().then((res) => setSymbols(res.symbols));
-    checkAIStatus().then((s) => setAiReady(s.configured));
+    getAIStatus()
+      .then((s) => setAiReady(s.configured))
+      .catch(() => setAiReady(false));
   }, []);
 
   const runAnalysis = useCallback(async () => {
@@ -127,8 +126,9 @@ export default function AIDashboard() {
 
       <div className="source-badge">
         Powered by OpenAI API
-        {aiReady === false && " — OPENAI_API_KEY が未設定です"}
+        {aiReady === false && " — サーバー側 OPENAI_API_KEY が未設定です（Railway Variables を確認）"}
         {aiReady === true && " — 接続準備完了"}
+        {session && !session.features.ai && " — プランで AI が無効です"}
       </div>
 
       {error && <div className="error-banner">{error}</div>}

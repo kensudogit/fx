@@ -20,6 +20,7 @@ PUBLIC_API_PATHS = {
     "/api/auth/login",
     "/api/billing/plans",
     "/api/billing/webhook",
+    "/api/ai/status",
 }
 
 PUBLIC_API_PREFIXES = (
@@ -38,6 +39,8 @@ def _is_public_api(path: str, method: str) -> bool:
 
 
 def _requires_premium(path: str, method: str) -> bool:
+    if path == "/api/ai/status":
+        return False
     if (method, path) in PREMIUM_PATH_EXACT:
         return True
     return any(path.startswith(p) for p in PREMIUM_PATH_PREFIXES)
