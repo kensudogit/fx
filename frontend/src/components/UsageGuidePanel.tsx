@@ -20,7 +20,7 @@ type FeaturedBlock = {
   title: string
   body: string
   items?: readonly string[]
-  variant?: 'architecture' | 'ai' | 'technical' | 'fundamental' | 'analysis' | 'dashboard' | 'pro' | 'saas' | 'default'
+  variant?: 'architecture' | 'ai' | 'technical' | 'fundamental' | 'analysis' | 'dashboard' | 'pro' | 'saas' | 'devtools' | 'default'
 }
 
 const architectureFeatured: FeaturedBlock = {
@@ -165,6 +165,21 @@ const saasFeatured: FeaturedBlock = {
   ],
 }
 
+const claudeCodeFeatured: FeaturedBlock = {
+  badge: 'Claude Code',
+  title: 'Cursor から Claude Code へ移植',
+  body:
+    'コード自体の書き換えは不要。同じ Git リポジトリを Claude Code で開き、CLAUDE.md にプロジェクト文脈を書くことで Cursor と同等の開発支援が可能です。CLI · VS Code/Cursor 拡張 · Desktop で共通の設定が使えます。',
+  variant: 'devtools',
+  items: [
+    'インストール — PowerShell: irm https://claude.ai/install.ps1 | iex',
+    '起動 — cd fx && claude（初回は Anthropic アカウントでログイン）',
+    '記憶 — /init で CLAUDE.md 自動生成 → FX Tool 固有の追記',
+    '確認 — /memory で読み込みファイル一覧を表示',
+    'Cursor 併用 — 拡張機能「Claude Code」を入れれば同じ IDE 内で利用可能',
+  ],
+}
+
 const techStack = [
   'Python · FastAPI',
   'Next.js 15 · Recharts',
@@ -204,10 +219,11 @@ const guideSections: readonly GuideSection[] = [
     steps: [
       {
         title: 'パネル操作・画面遷移',
-        body: '本パネルは全画面で表示されます。ヘッダーをドラッグして位置を変更でき、▼▲ で折りたたみ可能です。',
+        body: '本パネルは全画面で表示されます。PC ではヘッダーをドラッグして位置を変更でき、▼▲ で折りたたみ可能です。スマホでは画面下部のボトムシートとして表示されます。',
         items: [
+          'PC — ヘッダーをドラッグで移動 · ▼▲ で開閉 · 位置はブラウザに自動保存',
+          'スマホ — 右上 ≡ でメニュー · 本パネルは画面下部（初期は折りたたみ）',
           '画面上部ナビ — テクニカル / ファンダ / マーケット分析 / AI / AI Pro / ダッシュボード / 自動取引 / 料金 / 設定',
-          '本パネル — 右下付近に表示（位置・開閉状態はブラウザに自動保存）',
           '推奨フロー — 登録 → テクニカル → 分析 → AI Pro → ダッシュボード → 自動取引',
           'プレゼン時 — パネルを画面端に寄せ、メイン画面を広く使う',
         ],
@@ -485,6 +501,80 @@ const guideSections: readonly GuideSection[] = [
     ],
   },
   {
+    label: 'Claude Code 移植・開発',
+    steps: [
+      {
+        title: '移植の考え方',
+        body:
+          'Claude Code への「移植」はアプリコードの書き換えではなく、同じ Git リポジトリを Claude Code で開発できるように環境と文脈を移す作業です。Railway デプロイや .env はそのまま使えます。',
+        items: [
+          'そのまま使える — Git リポジトリ · docker compose · npm · Python venv · Railway 設定',
+          '移すもの — Cursor のチャット履歴 → CLAUDE.md に要点を書く',
+          'Cursor Rules → CLAUDE.md または .claude/rules/*.md',
+          '移せない — 過去の Cursor セッション履歴（手動で CLAUDE.md に要約）',
+        ],
+      },
+      {
+        title: 'インストールと起動（Windows）',
+        body: 'Claude Code CLI を入れ、プロジェクトルートで起動します。Git for Windows があると Bash ツールが使えます。',
+        items: [
+          'PowerShell — irm https://claude.ai/install.ps1 | iex',
+          'または — winget install Anthropic.ClaudeCode',
+          '起動 — cd fx && claude（初回は Anthropic アカウントでログイン）',
+          'Cursor 拡張 — 「Claude Code」を入れ Ctrl+Shift+P → Open in New Tab',
+          'Web 版 — claude.ai/code（GitHub 連携 · ローカル不要）',
+        ],
+      },
+      {
+        title: 'ローカル環境の確認（移植前）',
+        body: 'Claude Code に任せる前に、ローカルで起動できることを確認しておくとスムーズです。',
+        items: [
+          '① docker compose up -d（PostgreSQL :5433）',
+          '② copy .env.example .env → DATABASE_URL · JWT_SECRET 等を設定',
+          '③ backend — py -3.12 -m venv .venv → pip install -r requirements.txt → python run.py',
+          '④ frontend — npm install → npm run dev（:3000）',
+          '⑤ 確認 — http://localhost:3000 · http://localhost:8000/docs',
+        ],
+      },
+      {
+        title: 'CLAUDE.md の作成（最重要）',
+        body:
+          'Claude Code は毎セッション最初に CLAUDE.md を読みます。Cursor で毎回説明していた内容をここに書きます。',
+        items: [
+          '/init — リポジトリをスキャンして CLAUDE.md のたたき台を自動生成',
+          '追記 — backend(FastAPI) + frontend(Next.js) · autotrade · Railway デプロイ',
+          'コマンド — docker compose · npm run build · python run.py',
+          '規約 — 変更は最小限 · Python 3.12 · コミットは明示指示時のみ',
+          '禁止 — .env の編集・コミット（秘密情報）',
+          '/memory — 読み込み済みファイル一覧を確認',
+        ],
+      },
+      {
+        title: 'Cursor 機能との対応表',
+        body: 'Cursor で使っていた機能は Claude Code 側の設定ファイルに移せます。',
+        items: [
+          'Cursor Rules → CLAUDE.md + .claude/rules/*.md（paths でスコープ指定）',
+          'User Rules → ~/.claude/CLAUDE.md（全プロジェクト共通）',
+          '個人設定 → CLAUDE.local.md（.gitignore 推奨）',
+          'Skills → .claude/commands/（/deploy 等のカスタムコマンド）',
+          'MCP → .claude/settings.json の mcpServers',
+          '権限 — .claude/settings.json で npm run · docker compose を allow',
+        ],
+      },
+      {
+        title: '日常の使い方・試しプロンプト',
+        body: '移植完了の確認と、よく使う依頼例です。',
+        items: [
+          '確認 —「このリポジトリの構成と autotrade の主要ファイルを説明して」',
+          'ビルド —「npm run build を実行して TypeScript エラーを直して」',
+          '機能追加 —「AutoTradePanel をスマホ対応にして（コミットはしない）」',
+          'API —「autotrade のエンドポイント一覧を README に追記して」',
+          '注意 — .env · API キーは Claude に渡さない · Railway 本番は慎重に',
+        ],
+      },
+    ],
+  },
+  {
     label: 'SaaS・アカウント',
     steps: [
       {
@@ -593,7 +683,7 @@ const L = {
   workflowLabel: '詳細利用手順',
   scrollHint: '↓ 画面別の詳細手順・デモフローは下へ',
   footer:
-    '▼▲ で開閉 · ヘッダーをドラッグして移動 · 表示位置は自動保存されます。',
+    '▼▲ で開閉 · PC はヘッダーをドラッグして移動 · スマホは画面下部のボトムシート · 表示状態は自動保存されます。',
 } as const
 
 type SavedState = {
@@ -814,6 +904,7 @@ export function UsageGuidePanel() {
           <FeaturedSection block={dashboardFeatured} />
           <FeaturedSection block={autotradeFeatured} />
           <FeaturedSection block={saasFeatured} />
+          <FeaturedSection block={claudeCodeFeatured} />
 
           <p className="usage-guide-scroll-hint">{L.scrollHint}</p>
           <h3 className="usage-guide-workflow-title">{L.workflowLabel}</h3>

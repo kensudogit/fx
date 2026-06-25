@@ -789,6 +789,15 @@ main {
   background: linear-gradient(135deg, #22c55e, #6366f1);
 }
 
+.usage-guide-featured--devtools {
+  border-color: rgba(251, 146, 60, 0.35);
+  background: linear-gradient(135deg, rgba(255, 237, 213, 0.95), rgba(254, 243, 199, 0.75));
+}
+
+.usage-guide-featured--devtools .usage-guide-featured-badge {
+  background: linear-gradient(135deg, #fb923c, #f59e0b);
+}
+
 .usage-guide-workflow-title {
   margin: 0 0 0.65rem;
   font-size: 0.72rem;
