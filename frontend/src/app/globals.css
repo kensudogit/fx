@@ -1152,3 +1152,64 @@ main {
   margin: 0.5rem 0;
   font-size: 0.8rem;
 }
+
+.balance-input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  width: 110px;
+}
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+}
+
+.chat-messages {
+  flex: 1;
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 1rem 0;
+  padding: 0.5rem;
+}
+
+.chat-bubble {
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.chat-bubble p {
+  margin: 0.35rem 0 0;
+  line-height: 1.6;
+}
+
+.chat-user {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  margin-left: 2rem;
+}
+
+.chat-assistant {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  margin-right: 2rem;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input-row input {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+}

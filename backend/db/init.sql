@@ -121,3 +121,37 @@ ALTER TABLE tradingview_signals ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFER
 ALTER TABLE broker_orders ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
 CREATE INDEX IF NOT EXISTS idx_tv_signals_tenant ON tradingview_signals(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_broker_orders_tenant ON broker_orders(tenant_id);
+
+CREATE TABLE IF NOT EXISTS broker_accounts (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(80) NOT NULL,
+    broker VARCHAR(30) DEFAULT 'paper',
+    account_ref VARCHAR(100),
+    currency VARCHAR(3) DEFAULT 'USD',
+    balance NUMERIC(18, 2) DEFAULT 10000,
+    is_default INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_broker_accounts_tenant ON broker_accounts(tenant_id);
+
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+    user_id INTEGER,
+    symbol VARCHAR(10) DEFAULT 'USDJPY',
+    title VARCHAR(120) DEFAULT '投資相談',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id SERIAL PRIMARY KEY,
+    session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_tenant ON chat_sessions(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id);

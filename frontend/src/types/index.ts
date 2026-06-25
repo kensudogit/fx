@@ -418,3 +418,100 @@ export interface IntelligenceReport {
   economic: EconomicAnalysis;
   volatility: VolatilityPrediction;
 }
+
+export interface AISignalResult {
+  symbol: string;
+  price: number;
+  action: "buy" | "sell" | "hold";
+  confidence: number;
+  summary: string;
+  rule_signals: TradingSignal[];
+  trend_ml: { trend: string; label: string; confidence: number };
+  ai_decision?: AITradingDecision | null;
+}
+
+export interface MarketBrief {
+  symbol: string;
+  news: { articles: NewsArticle[]; ml: MLNewsAnalysis };
+  sns: { summary: string; sentiment: MLNewsAnalysis; engagement: string; posts: SNSPost[] };
+  economic: {
+    pair_bias: string;
+    pair_bias_label: string;
+    overview: string;
+    indicators: EconomicIndicator[];
+    alerts: EventAlert[];
+  };
+  openai?: {
+    executive_summary?: string;
+    market_impact?: string;
+    impact_direction?: string;
+    key_drivers?: string[];
+    trading_implication?: string;
+    confidence?: number;
+  } | null;
+  fallback_summary?: Record<string, string>;
+}
+
+export interface CoachingResult {
+  symbol: string;
+  trade_stats: Record<string, unknown>;
+  coaching: {
+    overall_assessment?: string;
+    strengths?: string[];
+    weaknesses?: string[];
+    recommendations?: string[];
+    next_focus?: string;
+    risk_discipline_score?: number;
+  } | null;
+}
+
+export interface WalkForwardResult {
+  status: string;
+  windows?: Array<{
+    window: number;
+    in_sample: SignalBacktest;
+    out_of_sample: SignalBacktest;
+  }>;
+  summary?: {
+    window_count: number;
+    avg_in_sample_win_rate: number;
+    avg_out_of_sample_win_rate: number;
+    robustness_label: string;
+  };
+  message?: string;
+}
+
+export interface AdvancedRisk {
+  symbol: string;
+  account_balance: number;
+  drawdown: { max_drawdown_pct: number; current_drawdown_pct: number };
+  position_sizing: PositionSizeResult;
+  stop_loss: { price: number; pips: number; max_loss_usd: number };
+  take_profit: { price: number; risk_reward: number };
+  capital_allocation: { method: string; pairs: Array<{ symbol: string; weight_pct: number; allocated_usd: number }> };
+  risk_budget: { per_trade_usd: number; max_concurrent_exposure_usd: number; max_open_positions_suggested: number };
+  recommendations: string[];
+}
+
+export interface PortfolioOverview {
+  accounts: Array<{ id: number; name: string; broker: string; balance: number; is_default: boolean }>;
+  account_count: number;
+  total_balance: number;
+  pairs: Array<{ symbol: string; price: number; change_30d_pct: number; open_orders: number }>;
+  recent_orders: BrokerOrder[];
+  summary: string;
+}
+
+export interface ChatMessage {
+  role: string;
+  content: string;
+  created_at?: string;
+}
+
+export interface ChatResponse {
+  session_id: number;
+  symbol: string;
+  reply: string;
+  messages?: ChatMessage[];
+  error?: string;
+}

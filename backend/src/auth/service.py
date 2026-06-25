@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from src.ai.chat import init_chat_tables
 from src.auth.models import Tenant, TenantApiKey, User, count_daily_usage, init_auth_tables
 from src.auth.plans import daily_limit, plan_features
 from src.auth.security import (
@@ -201,3 +202,4 @@ def _tenant_payload(tenant: Tenant) -> dict:
 
 def bootstrap_auth():
     init_auth_tables()
+    init_chat_tables()

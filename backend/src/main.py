@@ -29,6 +29,7 @@ from src.ai.analyzer import (
 )
 from src.ai.client import resolve_openai_api_key
 from src.ai.news import analyze_news, fetch_rss_news
+from src.api.ai_pro import router as ai_pro_router
 from src.api.dashboard import build_dashboard
 from src.api.intelligence import build_intelligence
 from src.analysis.economic import analyze_economic
@@ -57,12 +58,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="FX Tool API",
     description="テクニカル分析・ファンダメンタル分析 API（SaaS対応）",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
 )
 
 app.add_middleware(SaaSAuthMiddleware)
 app.include_router(auth_router)
+app.include_router(ai_pro_router)
 
 app.add_middleware(
     CORSMiddleware,

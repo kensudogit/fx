@@ -16,8 +16,9 @@ export function NavBar() {
           <a href="/">テクニカル分析</a>
           <a href="/fundamental">ファンダメンタル分析</a>
           <a href="/analysis">マーケット分析</a>
-          <a href="/ai">AI分析</a>
-          <a href="/dashboard">統合ダッシュボード</a>
+              <a href="/ai">AI分析</a>
+              <a href="/pro">AI Pro</a>
+              <a href="/dashboard">統合ダッシュボード</a>
           <a href="/pricing">料金</a>
           {SAAS_ENABLED && !loading && session && (
             <>

@@ -1,4 +1,5 @@
 import { authHeaders } from "./auth";
+import type { SignalBacktest, BacktraderResult, WalkForwardResult } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -311,5 +312,50 @@ export async function createApiKey(name: string): Promise<{
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
+  });
+}
+
+export async function getProSignals(symbol: string, days = 200): Promise<import("@/types").AISignalResult> {
+  return fetchAPI(`/api/pro/signals/${symbol}?days=${days}`);
+}
+
+export async function getProMarketBrief(symbol: string): Promise<import("@/types").MarketBrief> {
+  return fetchAPI(`/api/pro/market-brief/${symbol}`);
+}
+
+export async function getProCoaching(symbol: string): Promise<import("@/types").CoachingResult> {
+  return fetchAPI(`/api/pro/coaching/${symbol}`);
+}
+
+export async function getProBacktest(symbol: string, days = 200): Promise<{
+  symbol: string;
+  simple: SignalBacktest;
+  backtrader: BacktraderResult;
+  walk_forward: WalkForwardResult;
+}> {
+  return fetchAPI(`/api/pro/backtest/${symbol}?days=${days}`);
+}
+
+export async function getProRisk(
+  symbol: string,
+  accountBalance = 10000,
+  riskPercent = 1
+): Promise<import("@/types").AdvancedRisk> {
+  return fetchAPI(`/api/pro/risk/${symbol}?account_balance=${accountBalance}&risk_percent=${riskPercent}`);
+}
+
+export async function getProPortfolio(): Promise<import("@/types").PortfolioOverview> {
+  return fetchAPI("/api/pro/portfolio");
+}
+
+export async function sendProChat(
+  message: string,
+  symbol: string,
+  sessionId?: number
+): Promise<import("@/types").ChatResponse> {
+  return fetchAPI("/api/pro/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, symbol, session_id: sessionId ?? null }),
   });
 }

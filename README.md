@@ -45,6 +45,18 @@ FX通貨ペアのテクニカル分析・ファンダメンタル分析ツール
 - **経済指標分析**: 雇用・CPI・FOMC・日銀・GDP のスコアリング
 - **ボラティリティ予測**: ATR / EWMA + RandomForest 予測
 
+### AI Pro — 差別化機能 (`/pro`)
+| 機能 | API |
+|------|-----|
+| AI売買シグナル | `GET /api/pro/signals/{symbol}` |
+| 市場ブリーフ（ニュース+SNS+経済） | `GET /api/pro/market-brief/{symbol}` |
+| AIコーチング（売買履歴） | `GET /api/pro/coaching/{symbol}` |
+| バックテスト+ウォークフォワード | `GET /api/pro/backtest/{symbol}` |
+| 高度リスク管理 | `GET /api/pro/risk/{symbol}` |
+| 口座・通貨ペア一元管理 | `GET /api/pro/portfolio` |
+| AIチャット投資相談 | `POST /api/pro/chat` |
+| 統合ハブ | `GET /api/pro/hub/{symbol}` |
+
 > API 層は Spring Boot ではなく **FastAPI** で実装しています（同等の REST API / BFF 役割）。
 
 ## セットアップ
