@@ -30,7 +30,7 @@ const architectureFeatured: FeaturedBlock = {
     'フロントは同一オリジンで FastAPI にプロキシ。OHLCV は Yahoo Finance 取得 → PostgreSQL 永続化。AI 機能は OpenAI API をバックエンド経由で呼び出し、API キーをクライアントに露出しません。',
   variant: 'architecture',
   items: [
-    'Next.js — テクニカル / ファンダ / 分析 / AI / Pro / ダッシュボード',
+    'Next.js — テクニカル / ファンダ / 分析 / AI / Pro / ダッシュボード / 自動取引',
     'FastAPI :8000 — 指標計算 · ML · OpenAI · SaaS 認証',
     'PostgreSQL — OHLCV · テナント · 注文 · チャット履歴',
     'SaaS — JWT ログイン · プラン制 · API キー · 利用量トラッキング',
@@ -104,7 +104,7 @@ const dashboardFeatured: FeaturedBlock = {
   badge: 'Dashboard',
   title: '統合ダッシュボード（/dashboard）',
   body:
-    'TradingView チャート・Webhook シグナル・ニュース ML・Backtrader・OANDA 注文を 1 画面に集約。実運用のコックピットとして利用します。',
+    'TradingView チャート・Webhook シグナル・ニュース ML・Backtrader・OANDA 注文を 1 画面に集約。実運用のコックピットとして利用します。自動約定は /autotrade で設定します。',
   variant: 'dashboard',
   items: [
     'TradingView — チャート埋め込み + Webhook でシグナル受信',
@@ -112,6 +112,23 @@ const dashboardFeatured: FeaturedBlock = {
     'ニュース ML — ヘッドラインとセンチメントスコア',
     'Backtrader — RSI+MACD 戦略のバックテスト結果',
     'OANDA — 成行注文（未設定時はペーパー取引）',
+    '自動取引 — /autotrade でマルチシグナル統合・自動約定を設定',
+  ],
+}
+
+const autotradeFeatured: FeaturedBlock = {
+  badge: 'Auto Trade',
+  title: '自動取引エンジン（/autotrade）',
+  body:
+    'AI・テクニカル・統合分析・マルチTF・TradingView を加重融合し、リスクガード通過後に OANDA / ペーパーで自動約定します。Pro プラン以上で利用可能です。',
+  variant: 'dashboard',
+  items: [
+    '有効化 — 「自動取引を有効化」を ON（OFF ではスケジューラも実行しない）',
+    'ドライラン — 指定通貨で評価のみ実行し、判定・信頼度・ブロック理由を確認',
+    '手動実行 — 単一通貨または全シンボルを即時実行',
+    'スケジューラ — バックエンド起動時に 15 分間隔で自動サイクル（AUTOTRADE_ENABLED）',
+    'TradingView 連携 — Webhook 受信時に即時実行（設定 ON 時）',
+    'OANDA 未設定 — ペーパー取引モードで約定シミュレーション',
   ],
 }
 
@@ -154,6 +171,7 @@ const techStack = [
   'OpenAI gpt-4o-mini',
   'Backtrader · scikit-learn',
   'OANDA · TradingView',
+  'Auto Trade Engine',
   'Yahoo Finance · Railway',
 ] as const
 
@@ -167,6 +185,7 @@ Next.js :PORT (Railway)
     ├─ /ai            OpenAI 統合分析
     ├─ /pro           AI Pro（差別化7機能）
     ├─ /dashboard     統合ダッシュボード
+    ├─ /autotrade     自動取引エンジン
     ├─ /login · /register · /settings
     └─ /api/* ──proxy──► FastAPI :8000
               ├─ Yahoo Finance (OHLCV)
@@ -186,9 +205,9 @@ const guideSections: readonly GuideSection[] = [
         title: 'パネル操作・画面遷移',
         body: '本パネルは全画面で表示されます。ヘッダーをドラッグして位置を変更でき、▼▲ で折りたたみ可能です。',
         items: [
-          '画面上部ナビ — テクニカル / ファンダ / マーケット分析 / AI / AI Pro / ダッシュボード / 料金 / 設定',
+          '画面上部ナビ — テクニカル / ファンダ / マーケット分析 / AI / AI Pro / ダッシュボード / 自動取引 / 料金 / 設定',
           '本パネル — 右下付近に表示（位置・開閉状態はブラウザに自動保存）',
-          '推奨フロー — 登録 → テクニカル → 分析 → AI Pro → ダッシュボード',
+          '推奨フロー — 登録 → テクニカル → 分析 → AI Pro → ダッシュボード → 自動取引',
           'プレゼン時 — パネルを画面端に寄せ、メイン画面を広く使う',
         ],
       },
@@ -213,6 +232,7 @@ const guideSections: readonly GuideSection[] = [
           '④ /pro で AIシグナル・市場ブリーフを実行',
           '⑤ /dashboard で TradingView + Backtrader を確認',
           '⑥ /settings で API キー発行（Webhook 連携用）',
+          '⑦ /autotrade でドライラン評価 → 設定確認後に有効化',
         ],
       },
     ],
@@ -347,6 +367,75 @@ const guideSections: readonly GuideSection[] = [
     ],
   },
   {
+    label: '自動取引 詳細',
+    steps: [
+      {
+        title: '自動取引画面の基本操作（/autotrade）',
+        body:
+          'Pro プラン以上で利用可能。有効化する前に必ずドライラン評価で判定内容を確認してください。OANDA 未設定時はペーパー取引で動作します。',
+        items: [
+          '前提 — Pro プラン · ログイン済み · /settings でプラン確認',
+          '有効化 — 「自動取引を有効化」チェックを ON',
+          '通貨ペア — 画面上部ドロップダウンで評価対象を選択',
+          '対象通貨 — 設定カードのチップで監視シンボルを複数選択可能',
+          '更新 — 右上「更新」で設定・スケジューラ状態・実行ログを再取得',
+        ],
+      },
+      {
+        title: '設定項目の意味',
+        body: 'エンジン設定カードでリスクとシグナル条件を調整します。変更はフォーカスアウト時に自動保存されます。',
+        items: [
+          '最低信頼度 — 融合スコアの閾値（デフォルト 65%）。高いほどエントリーが少ない',
+          'リスク (%) — 1 トレードあたり口座残高に対する許容損失率',
+          '口座残高 — ポジションサイズ算出の基準（OANDA 接続時は実残高も参照）',
+          '日次上限 — 1 日の最大約定回数（通貨ペア単位）',
+          'クールダウン — 同一通貨の再エントリーまでの待機時間（分）',
+          'イベント回避 — 高影響経済イベント前後のブラックアウト時間',
+          'シグナルソース — AI / テクニカル / 統合分析 / MTF / TradingView の ON/OFF',
+          'MTF 方向一致 — マルチタイムフレームとエントリー方向の一致を必須化',
+          'TradingView 即時実行 — Webhook 受信時に自動約定',
+        ],
+      },
+      {
+        title: '実行フロー（推奨手順）',
+        body: '本番約定前は必ずドライラン → ペーパー → 小ロットの順で検証してください。',
+        items: [
+          '① /autotrade を開き、USDJPY を選択',
+          '②「ドライラン評価」— 判定（ready / blocked / skipped）と理由を確認',
+          '③ 信頼度・MTF・イベント回避で blocked になる場合は設定を調整',
+          '④ 問題なければ「自動取引を有効化」を ON',
+          '⑤「USDJPY を実行」で手動約定テスト（ペーパーまたは OANDA practice）',
+          '⑥ 実行ログで約定・ブロック履歴を確認',
+          '⑦ TradingView 連携時 — /settings の API キーを Webhook に設定',
+          '⑧ 本番 — OANDA live 設定後、max_lots を小さく開始',
+        ],
+      },
+      {
+        title: '判定結果の読み方',
+        body: '評価結果カードと実行ログの decision 列で、エンジンの判断を確認できます。',
+        items: [
+          'ready — リスクガード通過・実行可能（ドライラン時）',
+          'executed — 約定完了',
+          'blocked — 信頼度不足 · MTF 不一致 · イベント回避 · 日次上限 · クールダウン',
+          'skipped — hold シグナルまたは条件未達',
+          'failed — OANDA API エラー等',
+          'トリガー — manual（手動）/ scheduler（定期）/ evaluate（評価のみ）',
+        ],
+      },
+      {
+        title: '環境変数（運用者向け）',
+        body: 'バックエンド .env でスケジューラと OANDA 接続を制御します。',
+        items: [
+          'AUTOTRADE_ENABLED=true — 起動時スケジューラ有効（デフォルト true）',
+          'AUTOTRADE_INTERVAL_MINUTES=15 — 定期実行間隔（分）',
+          'OANDA_API_TOKEN · OANDA_ACCOUNT_ID — 未設定時ペーパー取引',
+          'OANDA_ENVIRONMENT=practice — 本番前は practice を推奨',
+          'TRADINGVIEW_WEBHOOK + X-API-Key — SaaS 時テナント特定に必須',
+        ],
+      },
+    ],
+  },
+  {
     label: 'SaaS・アカウント',
     steps: [
       {
@@ -364,7 +453,7 @@ const guideSections: readonly GuideSection[] = [
         body: 'Free プランでも AI 分析・マーケット分析は利用可能（日次 API 上限あり）。',
         items: [
           'Free — 100 API/日 · AI · 分析 · Webhook',
-          'Pro — 2,000 API/日 · OANDA 注文 · 統合インテリジェンス',
+          'Pro — 2,000 API/日 · OANDA 注文 · 自動取引 · 統合インテリジェンス',
           'API キー — 設定画面で発行 → TradingView Webhook に X-API-Key',
           '利用量 — 設定画面で本日の API 消費量を確認',
         ],
@@ -382,6 +471,8 @@ const guideSections: readonly GuideSection[] = [
           'AI分析に失敗 — OPENAI_API_KEY の設定・残高・レート制限を確認',
           '登録 500 エラー — Railway 再デプロイ · JWT_SECRET · DB 接続を確認',
           'AI Pro プラン制限 — 403 の場合 /settings でプラン確認',
+          '自動取引 403 — Pro プラン以上が必要（/autotrade）',
+          'blocked が続く — 最低信頼度を下げる · MTF 必須を OFF · イベント回避時間を短縮',
           '/health が 503 — Railway 再デプロイ。DATABASE_URL を確認',
           'チャートが空 — 同期未実施、または選択期間のデータが DB に無い',
         ],
@@ -397,6 +488,10 @@ const guideSections: readonly GuideSection[] = [
           'GET /api/pro/market-brief/{symbol} — 市場ブリーフ',
           'POST /api/pro/chat — AI 投資相談チャット',
           'GET /api/pro/backtest/{symbol} — BT + ウォークフォワード',
+          'GET/PUT /api/autotrade/config — 自動取引設定',
+          'POST /api/autotrade/evaluate/{symbol} — ドライラン評価',
+          'POST /api/autotrade/run/{symbol} — 手動約定',
+          'GET /api/autotrade/runs — 実行ログ',
           'GET /api/ai/report/{symbol}?balance=10000 — AI 統合レポート',
           'POST /api/auth/register · /api/auth/login — SaaS 認証',
         ],
@@ -409,6 +504,7 @@ const guideSections: readonly GuideSection[] = [
           'SaaS — SAAS_ENABLED=true · NEXT_PUBLIC_SAAS_ENABLED=true',
           'ローカル — docker compose up -d → backend :8000 → frontend npm run dev :3000',
           '環境変数 — OPENAI_API_KEY · OPENAI_MODEL=gpt-4o-mini · OANDA_*（任意）',
+          '自動取引 — AUTOTRADE_ENABLED · AUTOTRADE_INTERVAL_MINUTES',
         ],
       },
       {
@@ -420,7 +516,8 @@ const guideSections: readonly GuideSection[] = [
           '5–7分: /analysis — 5カテゴリ分析と総合スコア',
           '7–11分: /pro — AIシグナル・市場ブリーフ・ウォークフォワード',
           '11–13分: /dashboard — TradingView + OANDA + Backtrader',
-          '13–15分: /ai 総合レポート · /settings APIキー · /docs',
+          '13–14分: /autotrade — ドライラン評価 · リスクガード · 実行ログ',
+          '14–15分: /ai 総合レポート · /settings APIキー · /docs',
         ],
       },
     ],
@@ -644,6 +741,7 @@ export function UsageGuidePanel() {
           <FeaturedSection block={aiFeatured} />
           <FeaturedSection block={aiProFeatured} />
           <FeaturedSection block={dashboardFeatured} />
+          <FeaturedSection block={autotradeFeatured} />
           <FeaturedSection block={saasFeatured} />
 
           <p className="usage-guide-scroll-hint">{L.scrollHint}</p>

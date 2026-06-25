@@ -12,6 +12,7 @@ PLANS = {
             "analysis_intelligence": True,
             "ai": True,
             "oanda_orders": False,
+            "autotrade": False,
             "api_keys": 1,
             "tradingview_webhook": True,
         },
@@ -27,6 +28,7 @@ PLANS = {
             "analysis_intelligence": True,
             "ai": True,
             "oanda_orders": True,
+            "autotrade": True,
             "api_keys": 5,
             "tradingview_webhook": True,
         },
@@ -42,6 +44,7 @@ PLANS = {
             "analysis_intelligence": True,
             "ai": True,
             "oanda_orders": True,
+            "autotrade": True,
             "api_keys": 50,
             "tradingview_webhook": True,
         },
@@ -51,6 +54,7 @@ PLANS = {
 PREMIUM_PATH_PREFIXES = (
     "/api/ai/",
     "/api/analysis/intelligence/",
+    "/api/autotrade/",
 )
 
 PREMIUM_PATH_EXACT = {

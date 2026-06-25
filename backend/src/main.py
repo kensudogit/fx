@@ -30,7 +30,9 @@ from src.ai.analyzer import (
 from src.ai.client import resolve_openai_api_key
 from src.ai.news import analyze_news, fetch_rss_news
 from src.api.ai_pro import router as ai_pro_router
+from src.api.autotrade import router as autotrade_router
 from src.api.dashboard import build_dashboard
+from src.autotrade.scheduler import start_scheduler
 from src.api.intelligence import build_intelligence
 from src.analysis.economic import analyze_economic
 from src.analysis.sns import analyze_sns
@@ -52,6 +54,8 @@ from src.tradingview.service import list_signals, save_signal
 async def lifespan(app: FastAPI):
     init_database()
     bootstrap_auth()
+    if settings.autotrade_enabled:
+        start_scheduler()
     yield
 
 
@@ -65,6 +69,7 @@ app = FastAPI(
 app.add_middleware(SaaSAuthMiddleware)
 app.include_router(auth_router)
 app.include_router(ai_pro_router)
+app.include_router(autotrade_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -428,7 +433,17 @@ async def tradingview_webhook(request: Request):
             if header != secret and payload.get("secret") != secret:
                 raise HTTPException(status_code=401, detail="Invalid webhook secret")
 
-    return {"ok": True, "signal": save_signal(payload, tenant_id)}
+    signal = save_signal(payload, tenant_id)
+
+    autotrade_result = None
+    try:
+        from src.autotrade.engine import process_tradingview_signal
+
+        autotrade_result = await process_tradingview_signal(signal, tenant_id)
+    except Exception:
+        pass
+
+    return {"ok": True, "signal": signal, "autotrade": autotrade_result}
 
 
 @app.get("/api/tradingview/signals")

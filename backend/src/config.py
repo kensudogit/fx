@@ -24,6 +24,9 @@ class Settings(BaseSettings):
 
     tradingview_webhook_secret: str = ""
 
+    autotrade_enabled: bool = True
+    autotrade_interval_minutes: int = 15
+
     jwt_secret: str = "change-me-in-production-use-long-random-string"
     jwt_algorithm: str = "HS256"
     jwt_expire_hours: int = 72

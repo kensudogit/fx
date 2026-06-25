@@ -19,6 +19,7 @@ export function NavBar() {
               <a href="/ai">AI分析</a>
               <a href="/pro">AI Pro</a>
               <a href="/dashboard">統合ダッシュボード</a>
+              <a href="/autotrade">自動取引</a>
           <a href="/pricing">料金</a>
           {SAAS_ENABLED && !loading && session && (
             <>

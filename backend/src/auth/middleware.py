@@ -126,6 +126,8 @@ class SaaSAuthMiddleware(BaseHTTPMiddleware):
                 return JSONResponse(status_code=403, content={"detail": "統合インテリジェンス分析は Pro プラン以上で利用できます"})
             if path == "/api/oanda/orders" and method == "POST" and not feats.get("oanda_orders"):
                 return JSONResponse(status_code=403, content={"detail": "OANDA 注文は Pro プラン以上で利用できます"})
+            if path.startswith("/api/autotrade/") and not feats.get("autotrade"):
+                return JSONResponse(status_code=403, content={"detail": "自動取引は Pro プラン以上で利用できます"})
 
         request.state.tenant = ctx
         from src.auth.context import set_tenant_context

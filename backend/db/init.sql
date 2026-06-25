@@ -155,3 +155,29 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_tenant ON chat_sessions(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id);
+
+CREATE TABLE IF NOT EXISTS autotrade_configs (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE UNIQUE,
+    config_json TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS autotrade_runs (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+    symbol VARCHAR(10) NOT NULL,
+    action VARCHAR(10) NOT NULL,
+    decision VARCHAR(20) NOT NULL,
+    confidence NUMERIC(5, 2),
+    units INTEGER,
+    fill_price NUMERIC(18, 6),
+    order_id INTEGER,
+    trigger VARCHAR(30) DEFAULT 'scheduler',
+    reason TEXT,
+    signal_snapshot TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_autotrade_runs_tenant ON autotrade_runs(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_autotrade_runs_symbol ON autotrade_runs(symbol, created_at DESC);

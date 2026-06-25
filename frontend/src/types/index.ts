@@ -515,3 +515,53 @@ export interface ChatResponse {
   messages?: ChatMessage[];
   error?: string;
 }
+
+export interface AutoTradeConfig {
+  enabled: boolean;
+  symbols: string[];
+  mode: "paper" | "live";
+  min_confidence: number;
+  risk_percent: number;
+  account_balance: number;
+  sources: string[];
+  require_mtf_alignment: boolean;
+  event_blackout_hours: number;
+  max_daily_trades: number;
+  cooldown_minutes: number;
+  auto_execute_tradingview: boolean;
+  max_lots: number;
+  min_lots: number;
+  scheduler_interval_minutes: number;
+}
+
+export interface AutoTradeRun {
+  id?: number;
+  symbol: string;
+  action: string;
+  decision: string;
+  confidence: number | null;
+  units?: number | null;
+  fill_price?: number | null;
+  order_id?: number | null;
+  trigger: string;
+  reason: string;
+  signal_snapshot?: Record<string, unknown>;
+  created_at?: string;
+}
+
+export interface AutoTradeEvaluateResult extends AutoTradeRun {
+  signal_snapshot: Record<string, unknown>;
+}
+
+export interface AutoTradeStatus {
+  config: AutoTradeConfig;
+  scheduler: {
+    scheduler_running: boolean;
+    global_enabled: boolean;
+    last_run_at: string | null;
+    last_results_count: number;
+    interval_minutes: number;
+    enabled_tenants: number;
+  };
+  recent_runs: AutoTradeRun[];
+}

@@ -359,3 +359,52 @@ export async function sendProChat(
     body: JSON.stringify({ message, symbol, session_id: sessionId ?? null }),
   });
 }
+
+export async function getAutoTradeConfig(): Promise<{
+  config: import("@/types").AutoTradeConfig;
+  defaults: import("@/types").AutoTradeConfig;
+}> {
+  return fetchAPI("/api/autotrade/config");
+}
+
+export async function updateAutoTradeConfig(
+  config: Partial<import("@/types").AutoTradeConfig>
+): Promise<{ config: import("@/types").AutoTradeConfig }> {
+  return fetchAPI("/api/autotrade/config", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config),
+  });
+}
+
+export async function getAutoTradeStatus(): Promise<import("@/types").AutoTradeStatus> {
+  return fetchAPI("/api/autotrade/status");
+}
+
+export async function getAutoTradeRuns(
+  symbol?: string,
+  limit = 30
+): Promise<{ runs: import("@/types").AutoTradeRun[] }> {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (symbol) q.set("symbol", symbol);
+  return fetchAPI(`/api/autotrade/runs?${q}`);
+}
+
+export async function evaluateAutoTrade(
+  symbol: string
+): Promise<import("@/types").AutoTradeEvaluateResult> {
+  return fetchAPI(`/api/autotrade/evaluate/${symbol}`, { method: "POST" });
+}
+
+export async function runAutoTradeSymbol(
+  symbol: string
+): Promise<import("@/types").AutoTradeEvaluateResult> {
+  return fetchAPI(`/api/autotrade/run/${symbol}`, { method: "POST" });
+}
+
+export async function runAutoTradeAll(): Promise<{
+  results: import("@/types").AutoTradeRun[];
+  count: number;
+}> {
+  return fetchAPI("/api/autotrade/run", { method: "POST" });
+}
