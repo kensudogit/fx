@@ -534,6 +534,20 @@ export interface AutoTradeConfig {
   scheduler_interval_minutes: number;
 }
 
+export interface AutoTradeOrderPlan {
+  side: string;
+  units: number;
+  lots?: number;
+}
+
+export interface AutoTradeSignalSnapshot {
+  order_plan?: AutoTradeOrderPlan;
+  guard_reason?: string;
+  price?: number;
+  fused?: Record<string, unknown>;
+  breakdown?: Array<{ source: string; action: string; weight: number }>;
+}
+
 export interface AutoTradeRun {
   id?: number;
   symbol: string;
@@ -545,12 +559,12 @@ export interface AutoTradeRun {
   order_id?: number | null;
   trigger: string;
   reason: string;
-  signal_snapshot?: Record<string, unknown>;
+  signal_snapshot?: AutoTradeSignalSnapshot;
   created_at?: string;
 }
 
 export interface AutoTradeEvaluateResult extends AutoTradeRun {
-  signal_snapshot: Record<string, unknown>;
+  signal_snapshot: AutoTradeSignalSnapshot;
 }
 
 export interface AutoTradeStatus {

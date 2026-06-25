@@ -378,12 +378,12 @@ export default function AutoTradePanel() {
                 </div>
               </div>
               <p className="hint">{evaluation.reason}</p>
-              {evaluation.signal_snapshot?.order_plan && (
+              {evaluation.signal_snapshot.order_plan ? (
                 <p className="hint">
-                  推奨: {(evaluation.signal_snapshot.order_plan as { side: string; units: number }).side}{" "}
-                  {(evaluation.signal_snapshot.order_plan as { units: number }).units} units
+                  推奨: {evaluation.signal_snapshot.order_plan.side}{" "}
+                  {evaluation.signal_snapshot.order_plan.units} units
                 </p>
-              )}
+              ) : null}
             </div>
           )}
         </div>
