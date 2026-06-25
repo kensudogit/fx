@@ -1,59 +1,75 @@
-"""自動取引バックグラウンドスケジューラ"""
+"""Per-tenant autotrade scheduler"""
+
+from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 
 from src.autotrade.engine import run_cycle
-from src.autotrade.models import get_config, list_enabled_tenant_ids
+from src.autotrade.models import get_config, list_scheduler_eligible_tenant_ids
 from src.config import settings
 
 logger = logging.getLogger(__name__)
 
 _task: asyncio.Task | None = None
 _running = False
-_last_run_at: str | None = None
-_last_results_count = 0
+_tenant_state: dict[int | None, dict] = {}
+_tenant_last_run: dict[int | None, datetime] = {}
 
 
-def scheduler_status() -> dict:
-    config = get_config(None)
+def scheduler_status(tenant_id: int | None = None) -> dict:
+    cfg = get_config(tenant_id)
+    state = _tenant_state.get(tenant_id, {})
     return {
-        "scheduler_running": _running,
+        "global_running": _running,
         "global_enabled": settings.autotrade_enabled,
-        "last_run_at": _last_run_at,
-        "last_results_count": _last_results_count,
-        "interval_minutes": config.get("scheduler_interval_minutes", 15),
-        "enabled_tenants": len(list_enabled_tenant_ids()),
+        "tenant_scheduler_enabled": cfg.get("scheduler_enabled", True),
+        "tenant_autotrade_enabled": cfg.get("enabled", False),
+        "trading_mode": cfg.get("mode", "paper"),
+        "interval_minutes": cfg.get("scheduler_interval_minutes", settings.autotrade_interval_minutes),
+        "last_run_at": state.get("last_run_at"),
+        "last_results_count": state.get("last_results_count", 0),
+        "enabled_tenants": len(list_scheduler_eligible_tenant_ids()),
     }
 
 
+def _tenant_due(tenant_id: int | None, now: datetime) -> bool:
+    cfg = get_config(tenant_id)
+    if not cfg.get("enabled") or not cfg.get("scheduler_enabled", True):
+        return False
+    interval = max(1, int(cfg.get("scheduler_interval_minutes", settings.autotrade_interval_minutes)))
+    last = _tenant_last_run.get(tenant_id)
+    if not last:
+        return True
+    return (now - last).total_seconds() >= interval * 60
+
+
 async def _scheduler_loop():
-    global _last_run_at, _last_results_count
     while _running:
-        config = get_config(None)
-        interval = max(1, int(config.get("scheduler_interval_minutes", settings.autotrade_interval_minutes)))
+        now = datetime.now(timezone.utc)
         try:
-            tenant_ids = list_enabled_tenant_ids()
+            tenant_ids = list_scheduler_eligible_tenant_ids()
             if not tenant_ids and settings.autotrade_enabled:
                 cfg = get_config(None)
-                if cfg.get("enabled"):
+                if cfg.get("enabled") and cfg.get("scheduler_enabled", True):
                     tenant_ids = [None]
 
-            total = 0
             for tid in tenant_ids:
+                if not _tenant_due(tid, now):
+                    continue
                 results = await run_cycle(tid, trigger="scheduler")
-                total += len(results)
-
-            from datetime import datetime, timezone
-
-            _last_run_at = datetime.now(timezone.utc).isoformat()
-            _last_results_count = total
-            if total:
-                logger.info("autotrade scheduler: %d results", total)
+                _tenant_last_run[tid] = now
+                _tenant_state[tid] = {
+                    "last_run_at": now.isoformat(),
+                    "last_results_count": len(results),
+                }
+                if results:
+                    logger.info("autotrade scheduler tenant=%s: %d results", tid, len(results))
         except Exception as e:
             logger.exception("autotrade scheduler error: %s", e)
 
-        await asyncio.sleep(interval * 60)
+        await asyncio.sleep(60)
 
 
 def start_scheduler():
@@ -62,7 +78,7 @@ def start_scheduler():
         return
     _running = True
     _task = asyncio.create_task(_scheduler_loop())
-    logger.info("autotrade scheduler started")
+    logger.info("autotrade scheduler started (per-tenant intervals)")
 
 
 def stop_scheduler():
@@ -72,3 +88,13 @@ def stop_scheduler():
         _task.cancel()
         _task = None
     logger.info("autotrade scheduler stopped")
+
+
+def set_tenant_scheduler_enabled(tenant_id: int | None, enabled: bool) -> dict:
+    from src.autotrade.models import save_config
+
+    cfg = get_config(tenant_id)
+    saved = save_config({**cfg, "scheduler_enabled": enabled}, tenant_id)
+    if not enabled:
+        _tenant_last_run.pop(tenant_id, None)
+    return saved

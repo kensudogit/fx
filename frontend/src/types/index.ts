@@ -538,6 +538,7 @@ export interface AutoTradeConfig {
   min_lots: number;
   min_units?: number;
   scheduler_interval_minutes: number;
+  scheduler_enabled?: boolean;
   allow_add_to_position?: boolean;
 }
 
@@ -618,12 +619,17 @@ export interface AutoTradeEvaluateResult extends AutoTradeRun {
 export interface AutoTradeStatus {
   config: AutoTradeConfig;
   scheduler: {
-    scheduler_running: boolean;
+    global_running: boolean;
     global_enabled: boolean;
+    tenant_scheduler_enabled?: boolean;
+    tenant_autotrade_enabled?: boolean;
+    trading_mode?: string;
     last_run_at: string | null;
     last_results_count: number;
     interval_minutes: number;
     enabled_tenants: number;
+    /** @deprecated use global_running */
+    scheduler_running?: boolean;
   };
   recent_runs: AutoTradeRun[];
   performance?: AutoTradePerformance;

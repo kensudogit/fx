@@ -13,7 +13,7 @@ from src.autotrade.evaluator import (
 )
 from src.autotrade.models import get_config, save_run
 from src.autotrade.positions import check_exits, open_position
-from src.broker.oanda import place_market_order
+from src.broker.oanda import fetch_live_prices, place_market_order
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def evaluate_symbol(
 
     order_plan = None
     if fused["action"] in ("buy", "sell") and passed:
-        order_plan = compute_order_size(symbol, config, context, fused["action"])
+        order_plan = compute_order_size(symbol, config, context, fused["action"], tenant_id)
 
     snapshot = {
         "fused": {k: v for k, v in fused.items() if k != "context"},
@@ -80,8 +80,9 @@ async def execute_order(
         return _result(symbol, "skipped", action, fused["confidence"], "hold", snapshot, tenant_id)
 
     if not order_plan:
-        order_plan = compute_order_size(symbol, get_config(tenant_id), fused["context"], action)
+        order_plan = compute_order_size(symbol, get_config(tenant_id), fused["context"], action, tenant_id)
 
+    trading_mode = get_config(tenant_id).get("mode", "paper")
     try:
         order = place_market_order(
             symbol,
@@ -90,6 +91,7 @@ async def execute_order(
             tenant_id,
             stop_loss=order_plan.get("stop_loss"),
             take_profit=order_plan.get("take_profit"),
+            trading_mode=trading_mode,
         )
     except Exception as e:
         logger.exception("autotrade order failed: %s", e)
@@ -134,17 +136,21 @@ async def run_cycle(tenant_id: int | None = None, trigger: str = "scheduler") ->
     if not config.get("enabled"):
         return []
 
+    trading_mode = config.get("mode", "paper")
     results = []
     for symbol in config.get("symbols", ["USDJPY"]):
         try:
+            live = fetch_live_prices([symbol], tenant_id, trading_mode)
+            live_price = live.get(symbol.upper(), {}).get("price")
             context = await gather_signal_context(symbol)
-            price = context["price"]
+            price = float(live_price) if live_price else context["price"]
             fused = fuse_signals(context, config)
 
             for ex in check_exits(
                 symbol, price, tenant_id,
                 reverse_action=fused["action"],
                 auto_exit_on_reverse=config.get("auto_exit_on_reverse", True),
+                trading_mode=trading_mode,
             ):
                 rec = _result(
                     symbol, "executed", "close", fused["confidence"],
@@ -178,7 +184,7 @@ async def run_cycle(tenant_id: int | None = None, trigger: str = "scheduler") ->
                 results.append(rec)
                 continue
 
-            order_plan = compute_order_size(symbol, config, context, fused["action"])
+            order_plan = compute_order_size(symbol, config, context, fused["action"], tenant_id)
             snapshot["order_plan"] = order_plan
             rec = await execute_order(symbol, fused, order_plan, snapshot, tenant_id, trigger=trigger)
             results.append(rec)

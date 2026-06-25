@@ -1,4 +1,4 @@
-import { authHeaders } from "./auth";
+import { authHeaders, clearAuth, SAAS_ENABLED } from "./auth";
 import type { SignalBacktest, BacktraderResult, WalkForwardResult } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -21,6 +21,14 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
       }
     } catch {
       // ignore parse error
+    }
+    if (SAAS_ENABLED && res.status === 401 && typeof window !== "undefined") {
+      clearAuth();
+      window.location.href = "/login";
+      throw new Error("セッションの有効期限が切れました。再ログインしてください。");
+    }
+    if (res.status === 403) {
+      throw new Error(`${detail} — /pricing でプランを確認してください。`);
     }
     throw new Error(detail);
   }
@@ -284,8 +292,51 @@ export async function authMe(): Promise<AuthSession> {
   return fetchAPI("/api/auth/me");
 }
 
-export async function getBillingPlans(): Promise<{ plans: BillingPlan[]; saas_enabled: boolean }> {
+export async function getBillingPlans(): Promise<{
+  plans: BillingPlan[];
+  saas_enabled: boolean;
+  stripe_enabled?: boolean;
+}> {
   return fetchAPI("/api/billing/plans");
+}
+
+export async function createBillingCheckout(plan: string): Promise<{ checkout_url: string }> {
+  return fetchAPI("/api/billing/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan }),
+  });
+}
+
+export async function getOandaSettings(): Promise<{
+  settings: {
+    account_id?: string;
+    environment?: string;
+    api_token_set?: boolean;
+    api_token_masked?: string;
+  } | null;
+  account_summary: {
+    configured: boolean;
+    mode: string;
+    balance: number;
+    source?: string;
+    message?: string;
+  };
+}> {
+  return fetchAPI("/api/broker/oanda/settings");
+}
+
+export async function updateOandaSettings(body: {
+  api_token?: string;
+  account_id?: string;
+  environment?: "practice" | "live";
+  clear_token?: boolean;
+}): Promise<{ settings: Record<string, unknown> }> {
+  return fetchAPI("/api/broker/oanda/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 export async function upgradePlan(plan: string): Promise<{ tenant: AuthSession["tenant"] }> {

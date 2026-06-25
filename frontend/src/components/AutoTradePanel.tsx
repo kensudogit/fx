@@ -115,6 +115,13 @@ export default function AutoTradePanel() {
   };
 
   const handleRunSymbol = async () => {
+    if (
+      !window.confirm(
+        `${symbol} で自動取引を実行します。OANDA practice/live またはペーパー約定が発生する可能性があります。続行しますか？`,
+      )
+    ) {
+      return;
+    }
     setRunning(true);
     setError(null);
     try {
@@ -129,6 +136,13 @@ export default function AutoTradePanel() {
   };
 
   const handleRunAll = async () => {
+    if (
+      !window.confirm(
+        "監視中の全シンボルで自動取引を実行します。複数の約定が発生する可能性があります。続行しますか？",
+      )
+    ) {
+      return;
+    }
     setRunning(true);
     setError(null);
     try {
@@ -564,7 +578,14 @@ export default function AutoTradePanel() {
             <div className="stat-grid" style={{ marginBottom: "1rem" }}>
               <div className="stat-item">
                 <div className="label">スケジューラ</div>
-                <div className="value">{scheduler.scheduler_running ? "稼働中" : "停止"}</div>
+                <div className="value">
+                  {scheduler.tenant_scheduler_enabled !== false ? "有効" : "無効"}
+                  {scheduler.global_running ? " · 稼働中" : ""}
+                </div>
+              </div>
+              <div className="stat-item">
+                <div className="label">取引モード</div>
+                <div className="value">{scheduler.trading_mode ?? config.mode ?? "paper"}</div>
               </div>
               <div className="stat-item">
                 <div className="label">間隔</div>
@@ -577,10 +598,6 @@ export default function AutoTradePanel() {
                     ? new Date(scheduler.last_run_at).toLocaleString("ja-JP")
                     : "—"}
                 </div>
-              </div>
-              <div className="stat-item">
-                <div className="label">有効テナント</div>
-                <div className="value">{scheduler.enabled_tenants}</div>
               </div>
             </div>
           )}

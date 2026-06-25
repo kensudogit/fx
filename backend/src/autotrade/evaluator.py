@@ -8,7 +8,7 @@ from typing import Any
 from src.ai.signals import generate_ai_signals
 from src.analysis.fundamental import get_event_alerts
 from src.analysis.multi_timeframe import analyze_multi_timeframe
-from src.analysis.position_sizing import calculate_position_size
+from src.analysis.position_sizing import calculate_position_size, pip_size
 from src.analysis.signals import signals_from_row
 from src.analysis.technical import compute_all_indicators
 from src.analysis.volatility import calc_atr
@@ -205,9 +205,10 @@ def check_risk_guards(
     return True, "リスクチェック通過"
 
 
-def compute_order_size(symbol: str, config: dict, context: dict, side: str) -> dict:
+def compute_order_size(symbol: str, config: dict, context: dict, side: str, tenant_id: int | None = None) -> dict:
     """ATR ベースのポジションサイズ + SL/TP 価格"""
-    acct = get_account_summary()
+    trading_mode = config.get("mode", "paper")
+    acct = get_account_summary(tenant_id, trading_mode)
     balance = float(config.get("account_balance") or acct.get("balance") or 10000)
     risk_pct = float(config.get("risk_percent", 1.0))
     price = context["price"]

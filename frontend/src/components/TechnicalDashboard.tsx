@@ -17,6 +17,7 @@ import MultiTimeframePanel from "@/components/MultiTimeframePanel";
 import PositionSizePanel from "@/components/PositionSizePanel";
 import BacktestPanel from "@/components/BacktestPanel";
 import EventAlertBanner from "@/components/EventAlertBanner";
+import { useLivePrices } from "@/lib/useLivePrices";
 
 type IndicatorTab = "price" | "bb" | "ichimoku" | "rsi" | "macd" | "stochastic";
 
@@ -34,6 +35,8 @@ export default function TechnicalDashboard() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { quotes, connected } = useLivePrices([symbol], !loading);
+  const liveQuote = quotes[symbol];
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -130,8 +133,15 @@ export default function TechnicalDashboard() {
         <>
           <div className="stat-grid" style={{ marginBottom: "1.5rem" }}>
             <div className="stat-item">
-              <div className="label">終値</div>
-              <div className="value">{data.latest.close}</div>
+              <div className="label">
+                {liveQuote?.price ? "リアルタイム" : "終値"}
+                {connected && liveQuote?.price ? (
+                  <span className="badge badge-buy" style={{ marginLeft: "0.35rem", fontSize: "0.65rem" }}>
+                    LIVE
+                  </span>
+                ) : null}
+              </div>
+              <div className="value">{liveQuote?.price ?? data.latest.close}</div>
             </div>
             <div className="stat-item">
               <div className="label">RSI (14)</div>

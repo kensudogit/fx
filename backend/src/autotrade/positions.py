@@ -165,6 +165,7 @@ def check_exits(
     tenant_id: int | None,
     reverse_action: str | None = None,
     auto_exit_on_reverse: bool = True,
+    trading_mode: str = "paper",
 ) -> list[dict]:
     """SL/TP 到達または逆シグナルで決済"""
     positions = list_open_positions(tenant_id, symbol)
@@ -197,9 +198,9 @@ def check_exits(
 
         exit_side = "sell" if side == "buy" else "buy"
         try:
-            oanda_close(symbol, side, pos["units"], tenant_id)
+            oanda_close(symbol, side, pos["units"], tenant_id, trading_mode=trading_mode)
         except Exception:
-            place_market_order(symbol, exit_side, pos["units"], tenant_id)
+            place_market_order(symbol, exit_side, pos["units"], tenant_id, trading_mode=trading_mode)
 
         rec = close_position_record(pos["id"], current_price, reason, tenant_id)
         if rec:

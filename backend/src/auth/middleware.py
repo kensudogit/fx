@@ -85,6 +85,11 @@ class SaaSAuthMiddleware(BaseHTTPMiddleware):
         if not path.startswith("/api/"):
             return await call_next(request)
 
+        if path.startswith("/api/ws/"):
+            return await call_next(request)
+        if path == "/api/prices/live" and method == "GET":
+            return await call_next(request)
+
         if _is_public_api(path, method):
             return await call_next(request)
 
@@ -134,6 +139,8 @@ class SaaSAuthMiddleware(BaseHTTPMiddleware):
                 return JSONResponse(status_code=403, content={"detail": "OANDA 注文は Pro プラン以上で利用できます"})
             if path.startswith("/api/autotrade/") and not feats.get("autotrade"):
                 return JSONResponse(status_code=403, content={"detail": "自動取引は Pro プラン以上で利用できます"})
+            if path.startswith("/api/broker/") and not feats.get("oanda_orders"):
+                return JSONResponse(status_code=403, content={"detail": "OANDA 設定は Pro プラン以上で利用できます"})
 
         request.state.tenant = ctx
         from src.auth.context import set_tenant_context

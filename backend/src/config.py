@@ -33,7 +33,11 @@ class Settings(BaseSettings):
 
     saas_enabled: bool = True
     saas_default_plan: str = "pro"  # 新規登録時のプラン（free | pro | enterprise）
+    stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    stripe_price_pro: str = ""
+    stripe_price_enterprise: str = ""
+    app_public_url: str = "http://localhost:3000"
 
     cors_origins: str = "http://localhost:3000"
     port: int = 8000

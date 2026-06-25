@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import {
   createApiKey,
+  createBillingCheckout,
   getBillingPlans,
+  getOandaSettings,
   listApiKeys,
+  updateOandaSettings,
   upgradePlan,
   type BillingPlan,
 } from "@/lib/api";
@@ -14,25 +17,82 @@ import { setApiKey } from "@/lib/auth";
 export default function SettingsPage() {
   const { session, refresh } = useAuth();
   const [plans, setPlans] = useState<BillingPlan[]>([]);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
   const [keys, setKeys] = useState<{ id: number; name: string; key_prefix: string }[]>([]);
   const [newKeyName, setNewKeyName] = useState("TradingView Webhook");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [oandaAccountId, setOandaAccountId] = useState("");
+  const [oandaToken, setOandaToken] = useState("");
+  const [oandaEnv, setOandaEnv] = useState<"practice" | "live">("practice");
+  const [oandaSummary, setOandaSummary] = useState<string | null>(null);
+
   useEffect(() => {
-    getBillingPlans().then((r) => setPlans(r.plans));
+    getBillingPlans().then((r) => {
+      setPlans(r.plans);
+      setStripeEnabled(Boolean(r.stripe_enabled));
+    });
     listApiKeys().then((r) => setKeys(r.keys)).catch(() => {});
+    getOandaSettings()
+      .then((r) => {
+        if (r.settings?.account_id) setOandaAccountId(r.settings.account_id);
+        if (r.settings?.environment === "live") setOandaEnv("live");
+        if (r.account_summary?.configured) {
+          setOandaSummary(
+            `${r.account_summary.mode} · $${r.account_summary.balance.toLocaleString()} (${r.account_summary.source})`,
+          );
+        } else {
+          setOandaSummary(r.account_summary?.message ?? null);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      setMessage("Stripe 決済が完了しました。プランを反映中...");
+      refresh();
+    }
+  }, [refresh]);
 
   const handleUpgrade = async (plan: string) => {
     setError(null);
     try {
+      if (stripeEnabled && plan !== "free") {
+        const { checkout_url } = await createBillingCheckout(plan);
+        window.location.href = checkout_url;
+        return;
+      }
       await upgradePlan(plan);
       setMessage(`${plan} プランに変更しました`);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "プラン変更に失敗しました");
+    }
+  };
+
+  const handleSaveOanda = async () => {
+    setError(null);
+    try {
+      await updateOandaSettings({
+        account_id: oandaAccountId,
+        api_token: oandaToken || undefined,
+        environment: oandaEnv,
+      });
+      setOandaToken("");
+      setMessage("OANDA 設定を保存しました");
+      const r = await getOandaSettings();
+      if (r.account_summary?.configured) {
+        setOandaSummary(
+          `${r.account_summary.mode} · $${r.account_summary.balance.toLocaleString()} (${r.account_summary.source})`,
+        );
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "OANDA 設定の保存に失敗しました");
     }
   };
 
@@ -84,6 +144,7 @@ export default function SettingsPage() {
 
         <div className="card">
           <h2>プラン</h2>
+          {stripeEnabled && <p className="hint">有料プランは Stripe Checkout で決済されます。</p>}
           {message && <p className="hint">{message}</p>}
           {error && <p className="error-text">{error}</p>}
           <div className="plan-grid">
@@ -97,16 +158,50 @@ export default function SettingsPage() {
                   {p.features.ai_pro && <li>AI Pro</li>}
                   {p.features.oanda_orders && <li>OANDA注文</li>}
                   {p.features.autotrade && <li>自動取引</li>}
-                  {p.features.analysis_intelligence && <li>統合インテリジェンス</li>}
                 </ul>
                 {session.tenant.plan !== p.id && (
                   <button type="button" className="btn-secondary" onClick={() => handleUpgrade(p.id)}>
-                    選択
+                    {stripeEnabled && p.id !== "free" ? "Stripeで申込" : "選択"}
                   </button>
                 )}
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>OANDA 口座（テナント別）</h2>
+        <p className="hint">
+          組織ごとに OANDA API トークンと口座 ID を設定。自動取引の mode が live/practice のときに使用されます。
+        </p>
+        {oandaSummary && <p className="hint">接続状態: {oandaSummary}</p>}
+        <div className="form-grid">
+          <label>
+            口座 ID
+            <input value={oandaAccountId} onChange={(e) => setOandaAccountId(e.target.value)} placeholder="101-001-..." />
+          </label>
+          <label>
+            API トークン
+            <input
+              type="password"
+              value={oandaToken}
+              onChange={(e) => setOandaToken(e.target.value)}
+              placeholder="新規入力時のみ（保存済みはマスク表示）"
+            />
+          </label>
+          <label>
+            環境
+            <select value={oandaEnv} onChange={(e) => setOandaEnv(e.target.value as "practice" | "live")}>
+              <option value="practice">practice（デモ）</option>
+              <option value="live">live（本番）</option>
+            </select>
+          </label>
+        </div>
+        <div className="order-controls">
+          <button type="button" className="btn" onClick={handleSaveOanda}>
+            OANDA 設定を保存
+          </button>
         </div>
       </div>
 
@@ -131,11 +226,7 @@ export default function SettingsPage() {
               <strong>新しい API キー（再表示不可）:</strong>
             </p>
             <code>{createdKey}</code>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => setApiKey(createdKey)}
-            >
+            <button type="button" className="btn-secondary" onClick={() => setApiKey(createdKey)}>
               このブラウザに保存
             </button>
           </div>

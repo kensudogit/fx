@@ -6,10 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from src.db.database import get_db
+from src.auth.models import Tenant
 from src.auth.plans import list_plans_public
 from src.auth.service import (
-    bootstrap_auth,
     create_api_key,
     get_me,
     list_api_keys,
@@ -17,7 +16,9 @@ from src.auth.service import (
     register_tenant,
     upgrade_plan,
 )
+from src.billing.stripe_service import create_checkout_session, handle_stripe_webhook, stripe_configured
 from src.config import settings
+from src.db.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,12 @@ class PlanUpgradeBody(BaseModel):
     plan: str = Field(pattern="^(free|pro|enterprise)$")
 
 
+class CheckoutBody(BaseModel):
+    plan: str = Field(pattern="^(pro|enterprise)$")
+    success_url: str | None = None
+    cancel_url: str | None = None
+
+
 def _current_user_id(request: Request) -> int:
     tenant = getattr(request.state, "tenant", None)
     if not tenant or not tenant.user_id:
@@ -55,6 +62,12 @@ def _current_tenant_id(request: Request) -> int:
     if not tenant:
         raise HTTPException(status_code=401, detail="認証が必要です")
     return tenant.tenant_id
+
+
+def _require_owner(request: Request) -> None:
+    tenant = getattr(request.state, "tenant", None)
+    if tenant and tenant.role != "owner" and tenant.auth_via == "jwt":
+        raise HTTPException(status_code=403, detail="オーナーのみ操作できます")
 
 
 @router.post("/api/auth/register")
@@ -117,28 +130,62 @@ def auth_create_key(body: ApiKeyBody, request: Request, db: Session = Depends(ge
 
 @router.get("/api/billing/plans")
 def billing_plans():
-    return {"plans": list_plans_public(), "saas_enabled": settings.saas_enabled}
+    return {
+        "plans": list_plans_public(),
+        "saas_enabled": settings.saas_enabled,
+        "stripe_enabled": stripe_configured(),
+    }
+
+
+@router.post("/api/billing/checkout")
+def billing_checkout(body: CheckoutBody, request: Request, db: Session = Depends(get_db)):
+    _require_owner(request)
+    tenant_id = _current_tenant_id(request)
+    tenant = db.get(Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    base = settings.app_public_url.rstrip("/")
+    success = body.success_url or f"{base}/settings?checkout=success"
+    cancel = body.cancel_url or f"{base}/settings?checkout=cancel"
+    tenant_ctx = getattr(request.state, "tenant", None)
+    email = tenant_ctx.email if tenant_ctx else None
+
+    try:
+        url = create_checkout_session(db, tenant, body.plan, success, cancel, email)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"checkout_url": url}
 
 
 @router.post("/api/billing/upgrade")
 def billing_upgrade(body: PlanUpgradeBody, request: Request, db: Session = Depends(get_db)):
-    """デモ用プラン変更（本番では Stripe Webhook に置き換え）"""
+    """Stripe 未設定時のデモ用プラン変更（free へのダウングレードは常に可）"""
+    _require_owner(request)
+    if stripe_configured() and body.plan in ("pro", "enterprise"):
+        raise HTTPException(
+            status_code=400,
+            detail="有料プランは Stripe Checkout を使用してください",
+        )
     tenant_id = _current_tenant_id(request)
-    tenant = getattr(request.state, "tenant", None)
-    if tenant and tenant.role != "owner" and tenant.auth_via == "jwt":
-        raise HTTPException(status_code=403, detail="オーナーのみプラン変更できます")
     try:
         updated = upgrade_plan(db, tenant_id, body.plan)
-        return {"tenant": updated, "message": "プランを更新しました（デモ）"}
+        return {"tenant": updated, "message": "プランを更新しました"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/api/billing/webhook")
 async def billing_stripe_webhook(request: Request, db: Session = Depends(get_db)):
-    """Stripe Webhook フック（署名検証は本番で実装）"""
+    payload = await request.body()
+    sig = request.headers.get("Stripe-Signature")
     if not settings.stripe_webhook_secret:
         return {"received": True, "note": "STRIPE_WEBHOOK_SECRET 未設定 — ノーオペ"}
-    payload = await request.body()
-    logger.info("Stripe webhook received (%d bytes)", len(payload))
-    return {"received": True}
+    try:
+        result = handle_stripe_webhook(payload, sig, db)
+        return {"received": True, **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("Stripe webhook error: %s", e)
+        raise HTTPException(status_code=400, detail="Webhook processing failed")

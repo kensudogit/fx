@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,7 +32,9 @@ from src.ai.client import resolve_openai_api_key
 from src.ai.news import analyze_news, fetch_rss_news
 from src.api.ai_pro import router as ai_pro_router
 from src.api.autotrade import router as autotrade_router
+from src.api.broker import router as broker_router
 from src.api.dashboard import build_dashboard
+from src.api.prices import router as prices_router
 from src.autotrade.scheduler import start_scheduler
 from src.api.intelligence import build_intelligence
 from src.analysis.economic import analyze_economic
@@ -48,6 +51,8 @@ from src.auth.router import router as auth_router
 from src.auth.service import bootstrap_auth
 from src.auth.context import get_tenant_id
 from src.tradingview.service import list_signals, save_signal
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -70,6 +75,8 @@ app.add_middleware(SaaSAuthMiddleware)
 app.include_router(auth_router)
 app.include_router(ai_pro_router)
 app.include_router(autotrade_router)
+app.include_router(broker_router)
+app.include_router(prices_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -436,14 +443,21 @@ async def tradingview_webhook(request: Request):
     signal = save_signal(payload, tenant_id)
 
     autotrade_result = None
+    autotrade_error = None
     try:
         from src.autotrade.engine import process_tradingview_signal
 
         autotrade_result = await process_tradingview_signal(signal, tenant_id)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.exception("TradingView autotrade failed for tenant %s: %s", tenant_id, e)
+        autotrade_error = str(e)
 
-    return {"ok": True, "signal": signal, "autotrade": autotrade_result}
+    return {
+        "ok": True,
+        "signal": signal,
+        "autotrade": autotrade_result,
+        "autotrade_error": autotrade_error,
+    }
 
 
 @app.get("/api/tradingview/signals")
@@ -492,7 +506,7 @@ async def backtrader_backtest(
 # ── OANDA 注文 ──
 @app.get("/api/oanda/status")
 async def oanda_status():
-    return get_account_summary()
+    return get_account_summary(get_tenant_id())
 
 
 @app.get("/api/oanda/orders")

@@ -200,3 +200,13 @@ CREATE TABLE IF NOT EXISTS autotrade_positions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_autotrade_positions_open ON autotrade_positions(tenant_id, symbol, status);
+
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(100);
+
+CREATE TABLE IF NOT EXISTS tenant_oanda_settings (
+    tenant_id INTEGER PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+    api_token VARCHAR(500),
+    account_id VARCHAR(50),
+    environment VARCHAR(20) DEFAULT 'practice',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

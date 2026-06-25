@@ -10,7 +10,7 @@ from src.autotrade.engine import evaluate_symbol, run_cycle
 from src.autotrade.models import DEFAULT_CONFIG, get_config, list_runs, save_config
 from src.autotrade.positions import list_open_positions
 from src.autotrade.presets import apply_preset, list_presets
-from src.autotrade.scheduler import scheduler_status, start_scheduler, stop_scheduler
+from src.autotrade.scheduler import scheduler_status, set_tenant_scheduler_enabled, start_scheduler, stop_scheduler
 from src.autotrade.simulation import simulate_strategy
 from src.auth.context import get_tenant_id
 from src.data.sample_data import SYMBOL_BASE_PRICES
@@ -40,6 +40,7 @@ class AutoTradeConfigBody(BaseModel):
     min_lots: float | None = Field(default=None, ge=0.01, le=10)
     min_units: int | None = Field(default=None, ge=1000, le=1_000_000)
     scheduler_interval_minutes: int | None = Field(default=None, ge=1, le=1440)
+    scheduler_enabled: bool | None = None
     allow_add_to_position: bool | None = None
 
 
@@ -144,7 +145,7 @@ async def autotrade_update_config(body: AutoTradeConfigBody, request: Request):
 async def autotrade_status(request: Request):
     tid = _tenant(request)
     cfg = get_config(tid)
-    status = scheduler_status()
+    status = scheduler_status(tid)
     recent = list_runs(5, tid)
     performance = build_performance(tid, 50)
     return {
@@ -198,12 +199,15 @@ async def autotrade_run_all(request: Request):
 
 
 @router.post("/api/autotrade/scheduler/start")
-async def autotrade_scheduler_start():
+async def autotrade_scheduler_start(request: Request):
+    tid = _tenant(request)
+    set_tenant_scheduler_enabled(tid, True)
     start_scheduler()
-    return {"ok": True, "scheduler": scheduler_status()}
+    return {"ok": True, "scheduler": scheduler_status(tid)}
 
 
 @router.post("/api/autotrade/scheduler/stop")
-async def autotrade_scheduler_stop():
-    stop_scheduler()
-    return {"ok": True, "scheduler": scheduler_status()}
+async def autotrade_scheduler_stop(request: Request):
+    tid = _tenant(request)
+    set_tenant_scheduler_enabled(tid, False)
+    return {"ok": True, "scheduler": scheduler_status(tid)}

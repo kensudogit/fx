@@ -1,4 +1,6 @@
-"""OANDA v20 REST API（注文・口座）"""
+"""OANDA v20 REST API（注文・口座・リアルタイム価格）"""
+
+from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
@@ -7,6 +9,7 @@ from typing import Any
 import httpx
 from sqlalchemy import Column, DateTime, Integer, Numeric, String, desc, select
 
+from src.broker.tenant_oanda import OandaCredentials, resolve_oanda_credentials
 from src.config import settings
 from src.db.database import Base, SessionLocal, engine
 
@@ -20,6 +23,7 @@ SYMBOL_TO_OANDA = {
     "GBPUSD": "GBP_USD",
     "AUDUSD": "AUD_USD",
 }
+OANDA_TO_SYMBOL = {v: k for k, v in SYMBOL_TO_OANDA.items()}
 
 
 class BrokerOrder(Base):
@@ -45,46 +49,105 @@ def _ensure_table():
         logger.warning("broker_orders table: %s", e)
 
 
-def is_oanda_configured() -> bool:
-    return bool(settings.oanda_api_token and settings.oanda_account_id)
+def is_oanda_configured(tenant_id: int | None = None, trading_mode: str = "live") -> bool:
+    creds = resolve_oanda_credentials(tenant_id, trading_mode)
+    return creds.configured
 
 
-def _base_url() -> str:
-    if settings.oanda_environment == "live":
+def _base_url(creds: OandaCredentials) -> str:
+    if creds.mode == "live":
         return "https://api-fxtrade.oanda.com/v3"
     return "https://api-fxpractice.oanda.com/v3"
 
 
-def _headers() -> dict:
+def _headers(creds: OandaCredentials) -> dict:
     return {
-        "Authorization": f"Bearer {settings.oanda_api_token}",
+        "Authorization": f"Bearer {creds.api_token}",
         "Content-Type": "application/json",
     }
 
 
-def get_account_summary() -> dict:
-    if not is_oanda_configured():
+def get_account_summary(tenant_id: int | None = None, trading_mode: str = "live") -> dict:
+    creds = resolve_oanda_credentials(tenant_id, trading_mode)
+    if not creds.configured:
         return {
             "configured": False,
             "mode": "paper",
             "balance": 10000,
             "currency": "USD",
-            "message": "OANDA_API_TOKEN / OANDA_ACCOUNT_ID 未設定 — ペーパー取引モード",
+            "source": creds.source,
+            "message": "OANDA 未設定 — ペーパー取引モード（/settings で口座設定）",
         }
 
-    url = f"{_base_url()}/accounts/{settings.oanda_account_id}/summary"
+    url = f"{_base_url(creds)}/accounts/{creds.account_id}/summary"
     with httpx.Client(timeout=20.0) as client:
-        res = client.get(url, headers=_headers())
+        res = client.get(url, headers=_headers(creds))
         res.raise_for_status()
         acct = res.json().get("account", {})
     return {
         "configured": True,
-        "mode": settings.oanda_environment,
+        "mode": creds.mode,
+        "source": creds.source,
         "balance": float(acct.get("balance", 0)),
         "currency": acct.get("currency", "USD"),
         "unrealized_pl": float(acct.get("unrealizedPL", 0)),
         "open_trade_count": int(acct.get("openTradeCount", 0)),
     }
+
+
+def fetch_live_prices(symbols: list[str], tenant_id: int | None = None, trading_mode: str = "live") -> dict[str, dict]:
+    """リアルタイム価格取得 — OANDA pricing → DB/Yahoo フォールバック"""
+    creds = resolve_oanda_credentials(tenant_id, trading_mode)
+    normalized = [s.upper() for s in symbols if s.upper() in SYMBOL_TO_OANDA]
+    result: dict[str, dict] = {}
+
+    if creds.configured and normalized:
+        instruments = ",".join(SYMBOL_TO_OANDA[s] for s in normalized)
+        url = f"{_base_url(creds)}/accounts/{creds.account_id}/pricing"
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                res = client.get(url, headers=_headers(creds), params={"instruments": instruments})
+                res.raise_for_status()
+                for item in res.json().get("prices", []):
+                    sym = OANDA_TO_SYMBOL.get(item.get("instrument", ""))
+                    if not sym:
+                        continue
+                    bids = item.get("bids") or []
+                    asks = item.get("asks") or []
+                    bid = float(bids[0]["price"]) if bids else None
+                    ask = float(asks[0]["price"]) if asks else None
+                    mid = round((bid + ask) / 2, 5 if not sym.endswith("JPY") else 3) if bid and ask else None
+                    result[sym] = {
+                        "symbol": sym,
+                        "bid": bid,
+                        "ask": ask,
+                        "price": mid,
+                        "source": "oanda",
+                        "time": item.get("time"),
+                    }
+        except Exception as e:
+            logger.warning("OANDA pricing failed: %s", e)
+
+    missing = [s for s in normalized if s not in result]
+    if missing:
+        from src.data.market_data import get_ohlcv_data
+
+        for sym in missing:
+            try:
+                df, source = get_ohlcv_data(sym, 5)
+                price = float(df["close"].iloc[-1])
+                result[sym] = {
+                    "symbol": sym,
+                    "bid": price,
+                    "ask": price,
+                    "price": price,
+                    "source": source,
+                    "time": datetime.now(timezone.utc).isoformat(),
+                }
+            except Exception as e:
+                logger.warning("price fallback %s: %s", sym, e)
+
+    return result
 
 
 def place_market_order(
@@ -94,6 +157,7 @@ def place_market_order(
     tenant_id: int | None = None,
     stop_loss: float | None = None,
     take_profit: float | None = None,
+    trading_mode: str | None = None,
 ) -> dict:
     symbol = symbol.upper()
     side = side.lower()
@@ -101,7 +165,9 @@ def place_market_order(
         raise ValueError("side must be buy or sell")
     signed_units = abs(units) if side == "buy" else -abs(units)
 
-    if not is_oanda_configured():
+    mode = trading_mode or "paper"
+    creds = resolve_oanda_credentials(tenant_id, mode)
+    if not creds.configured:
         return _save_paper_order(symbol, side, abs(units), tenant_id, stop_loss, take_profit)
 
     instrument = SYMBOL_TO_OANDA.get(symbol)
@@ -121,9 +187,9 @@ def place_market_order(
         order_body["takeProfitOnFill"] = {"price": str(round(take_profit, 5))}
 
     payload = {"order": order_body}
-    url = f"{_base_url()}/accounts/{settings.oanda_account_id}/orders"
+    url = f"{_base_url(creds)}/accounts/{creds.account_id}/orders"
     with httpx.Client(timeout=20.0) as client:
-        res = client.post(url, headers=_headers(), json=payload)
+        res = client.post(url, headers=_headers(creds), json=payload)
         res.raise_for_status()
         body = res.json()
 
@@ -142,24 +208,32 @@ def place_market_order(
         record["stop_loss"] = stop_loss
     if take_profit is not None:
         record["take_profit"] = take_profit
+    record["broker_mode"] = creds.mode
     return record
 
 
-def close_position(symbol: str, side: str, units: int, tenant_id: int | None = None) -> dict:
-    """保有方向を指定して決済（side=現在のポジション方向）"""
+def close_position(
+    symbol: str,
+    side: str,
+    units: int,
+    tenant_id: int | None = None,
+    trading_mode: str | None = None,
+) -> dict:
     exit_side = "sell" if side == "buy" else "buy"
-    return place_market_order(symbol, exit_side, units, tenant_id)
+    return place_market_order(symbol, exit_side, units, tenant_id, trading_mode=trading_mode)
 
 
-def get_open_positions(tenant_id: int | None = None) -> list[dict]:
-    if not is_oanda_configured():
+def get_open_positions(tenant_id: int | None = None, trading_mode: str | None = None) -> list[dict]:
+    mode = trading_mode or "live"
+    creds = resolve_oanda_credentials(tenant_id, mode)
+    if not creds.configured:
         from src.autotrade.positions import list_open_positions
 
         return list_open_positions(tenant_id)
 
-    url = f"{_base_url()}/accounts/{settings.oanda_account_id}/openPositions"
+    url = f"{_base_url(creds)}/accounts/{creds.account_id}/openPositions"
     with httpx.Client(timeout=20.0) as client:
-        res = client.get(url, headers=_headers())
+        res = client.get(url, headers=_headers(creds))
         res.raise_for_status()
         positions = res.json().get("positions", [])
 
@@ -184,10 +258,16 @@ def _save_paper_order(
     stop_loss: float | None = None,
     take_profit: float | None = None,
 ) -> dict:
-    from src.data.market_data import get_ohlcv_data
+    live = fetch_live_prices([symbol], tenant_id, trading_mode="live")
+    quote = live.get(symbol.upper())
+    if quote and quote.get("price"):
+        price = float(quote["price"])
+    else:
+        from src.data.market_data import get_ohlcv_data
 
-    df, _ = get_ohlcv_data(symbol, 30)
-    price = float(df["close"].iloc[-1])
+        df, _ = get_ohlcv_data(symbol, 30)
+        price = float(df["close"].iloc[-1])
+
     record = _save_order(
         symbol, side, units, "FILLED", price, "paper", f"paper-{datetime.now().timestamp():.0f}", tenant_id
     )

@@ -40,7 +40,7 @@ async def build_dashboard(symbol: str, days: int = 200) -> dict:
         "backtest_simple": simple_bt,
         "backtest_backtrader": bt,
         "tradingview_signals": list_signals(symbol, 5, get_tenant_id()),
-        "oanda": get_account_summary(),
+        "oanda": get_account_summary(get_tenant_id()),
         "recent_orders": list_orders(5, get_tenant_id()),
         "stack": {
             "api": "FastAPI (Python)",

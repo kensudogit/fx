@@ -32,6 +32,7 @@ DEFAULT_CONFIG = {
     "min_lots": 0.01,
     "min_units": 1000,
     "scheduler_interval_minutes": 15,
+    "scheduler_enabled": True,
     "allow_add_to_position": False,
 }
 
@@ -245,7 +246,16 @@ def last_executed_at(tenant_id: int | None, symbol: str) -> datetime | None:
 
 
 def list_enabled_tenant_ids() -> list[int | None]:
-    """スケジューラ用: enabled なテナント一覧（tenant_id=None は非SaaS）"""
+    """enabled なテナント一覧（tenant_id=None は非SaaS）"""
+    return _list_tenant_ids_by_flag("enabled")
+
+
+def list_scheduler_eligible_tenant_ids() -> list[int | None]:
+    """enabled かつ scheduler_enabled なテナント一覧"""
+    return _list_tenant_ids_by_flag("enabled", also_require="scheduler_enabled")
+
+
+def _list_tenant_ids_by_flag(flag: str, also_require: str | None = None) -> list[int | None]:
     _ensure_tables()
     ids: list[int | None] = []
     db = SessionLocal()
@@ -253,13 +263,20 @@ def list_enabled_tenant_ids() -> list[int | None]:
         rows = db.execute(select(AutoTradeConfig)).scalars().all()
         for row in rows:
             cfg = merge_config(json.loads(row.config_json))
-            if cfg.get("enabled"):
-                ids.append(row.tenant_id)
+            if not cfg.get(flag):
+                continue
+            if also_require and not cfg.get(also_require, True):
+                continue
+            ids.append(row.tenant_id)
     except Exception as e:
-        logger.warning("list_enabled_tenant_ids: %s", e)
+        logger.warning("_list_tenant_ids_by_flag: %s", e)
     finally:
         db.close()
     for tid, cfg in _memory_configs.items():
-        if cfg.get("enabled") and tid not in ids:
+        if not cfg.get(flag):
+            continue
+        if also_require and not cfg.get(also_require, True):
+            continue
+        if tid not in ids:
             ids.append(tid)
     return ids

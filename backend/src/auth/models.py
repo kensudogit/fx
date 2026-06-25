@@ -28,6 +28,7 @@ class Tenant(Base):
     slug = Column(String(80), nullable=False, unique=True)
     plan = Column(String(20), nullable=False, default="free")
     stripe_customer_id = Column(String(100))
+    stripe_subscription_id = Column(String(100))
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
     users = relationship("User", back_populates="tenant")
@@ -78,6 +79,12 @@ def init_auth_tables():
         User.__table__.create(engine, checkfirst=True)
         TenantApiKey.__table__.create(engine, checkfirst=True)
         UsageEvent.__table__.create(engine, checkfirst=True)
+        from sqlalchemy import text
+
+        with engine.begin() as conn:
+            conn.execute(
+                text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(100)")
+            )
     except Exception as e:
         logger.warning("auth tables init: %s", e)
 

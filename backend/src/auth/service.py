@@ -198,6 +198,8 @@ def _tenant_payload(tenant: Tenant) -> dict:
         "name": tenant.name,
         "slug": tenant.slug,
         "plan": tenant.plan,
+        "stripe_customer_id": tenant.stripe_customer_id,
+        "has_stripe_subscription": bool(tenant.stripe_subscription_id),
     }
 
 
