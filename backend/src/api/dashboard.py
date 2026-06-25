@@ -6,6 +6,7 @@ from src.analysis.multi_timeframe import analyze_multi_timeframe
 from src.analysis.signals import backtest_signals, signals_from_row
 from src.analysis.technical import compute_all_indicators
 from src.backtest.backtrader_runner import run_backtrader_backtest
+from src.auth.context import get_tenant_id
 from src.broker.oanda import get_account_summary, is_oanda_configured, list_orders
 from src.data.market_data import get_ohlcv_data
 from src.ml.news_sentiment import analyze_headlines_ml
@@ -35,9 +36,9 @@ async def build_dashboard(symbol: str, days: int = 200) -> dict:
         "openai_configured": bool(resolve_openai_api_key()),
         "backtest_simple": simple_bt,
         "backtest_backtrader": bt,
-        "tradingview_signals": list_signals(symbol, 5),
+        "tradingview_signals": list_signals(symbol, 5, get_tenant_id()),
         "oanda": get_account_summary(),
-        "recent_orders": list_orders(5),
+        "recent_orders": list_orders(5, get_tenant_id()),
         "stack": {
             "api": "FastAPI (Python)",
             "frontend": "Next.js / React",

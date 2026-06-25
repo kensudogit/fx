@@ -74,3 +74,50 @@ CREATE TABLE IF NOT EXISTS broker_orders (
 );
 
 CREATE INDEX IF NOT EXISTS idx_broker_orders_created ON broker_orders(created_at DESC);
+
+-- SaaS: テナント・ユーザー
+CREATE TABLE IF NOT EXISTS tenants (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    slug VARCHAR(80) NOT NULL UNIQUE,
+    plan VARCHAR(20) NOT NULL DEFAULT 'free',
+    stripe_customer_id VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'owner',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tenant_api_keys (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(80) NOT NULL DEFAULT 'Default',
+    key_prefix VARCHAR(20) NOT NULL,
+    key_hash VARCHAR(64) NOT NULL,
+    last_used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_keys_tenant ON tenant_api_keys(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON tenant_api_keys(key_hash);
+
+CREATE TABLE IF NOT EXISTS usage_events (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    event_type VARCHAR(40) NOT NULL DEFAULT 'api_call',
+    path VARCHAR(200),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_tenant_day ON usage_events(tenant_id, created_at DESC);
+
+ALTER TABLE tradingview_signals ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
+ALTER TABLE broker_orders ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
+CREATE INDEX IF NOT EXISTS idx_tv_signals_tenant ON tradingview_signals(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_broker_orders_tenant ON broker_orders(tenant_id);

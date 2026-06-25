@@ -30,26 +30,39 @@ from src.ai.analyzer import (
 from src.ai.client import resolve_openai_api_key
 from src.ai.news import analyze_news, fetch_rss_news
 from src.api.dashboard import build_dashboard
+from src.api.intelligence import build_intelligence
+from src.analysis.economic import analyze_economic
+from src.analysis.sns import analyze_sns
 from src.backtest.backtrader_runner import run_backtrader_backtest
 from src.broker.oanda import get_account_summary, list_orders, place_market_order
 from src.config import settings
 from src.ml.news_sentiment import analyze_headlines_ml
 from src.ml.predictor import train_price_predictor
+from src.ml.trend_predictor import predict_trend
+from src.ml.volatility_predictor import predict_volatility
+from src.auth.middleware import SaaSAuthMiddleware
+from src.auth.router import router as auth_router
+from src.auth.service import bootstrap_auth
+from src.auth.context import get_tenant_id
 from src.tradingview.service import list_signals, save_signal
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_database()
+    bootstrap_auth()
     yield
 
 
 app = FastAPI(
     title="FX Tool API",
-    description="テクニカル分析・ファンダメンタル分析 API",
-    version="1.5.0",
+    description="テクニカル分析・ファンダメンタル分析 API（SaaS対応）",
+    version="2.0.0",
     lifespan=lifespan,
 )
+
+app.add_middleware(SaaSAuthMiddleware)
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -381,24 +394,44 @@ async def ai_full_report(
 # ── TradingView Webhook ──
 @app.post("/api/tradingview/webhook")
 async def tradingview_webhook(request: Request):
-    """TradingView アラート → Webhook URL に設定"""
+    """TradingView アラート → Webhook URL（SaaS: X-API-Key でテナント特定）"""
     try:
         payload = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
 
-    secret = settings.tradingview_webhook_secret
-    if secret:
-        header = request.headers.get("X-Webhook-Secret", "")
-        if header != secret and payload.get("secret") != secret:
-            raise HTTPException(status_code=401, detail="Invalid webhook secret")
+    tenant_id = get_tenant_id()
+    if settings.saas_enabled:
+        if not tenant_id:
+            from src.auth.service import resolve_api_key
+            from src.db.database import SessionLocal
 
-    return {"ok": True, "signal": save_signal(payload)}
+            api_key = request.headers.get("X-API-Key", "").strip()
+            if api_key:
+                db = SessionLocal()
+                try:
+                    ctx = resolve_api_key(db, api_key)
+                    tenant_id = ctx.tenant_id if ctx else None
+                finally:
+                    db.close()
+        if not tenant_id:
+            raise HTTPException(
+                status_code=401,
+                detail="TradingView Webhook には X-API-Key ヘッダーが必要です",
+            )
+    else:
+        secret = settings.tradingview_webhook_secret
+        if secret:
+            header = request.headers.get("X-Webhook-Secret", "")
+            if header != secret and payload.get("secret") != secret:
+                raise HTTPException(status_code=401, detail="Invalid webhook secret")
+
+    return {"ok": True, "signal": save_signal(payload, tenant_id)}
 
 
 @app.get("/api/tradingview/signals")
 async def tradingview_signals(symbol: str | None = None, limit: int = Query(default=20, le=100)):
-    return {"signals": list_signals(symbol, limit)}
+    return {"signals": list_signals(symbol, limit, get_tenant_id())}
 
 
 # ── ニュース分析（ML + OpenAI）──
@@ -447,7 +480,7 @@ async def oanda_status():
 
 @app.get("/api/oanda/orders")
 async def oanda_orders(limit: int = Query(default=20, le=100)):
-    return {"orders": list_orders(limit)}
+    return {"orders": list_orders(limit, get_tenant_id())}
 
 
 @app.post("/api/oanda/orders")
@@ -458,7 +491,7 @@ async def oanda_place_order(
 ):
     symbol = _validate_symbol(symbol)
     try:
-        return place_market_order(symbol, side, units)
+        return place_market_order(symbol, side, units, get_tenant_id())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -471,5 +504,65 @@ async def dashboard(symbol: str = Query(default="USDJPY"), days: int = Query(def
     symbol = _validate_symbol(symbol)
     try:
         return await build_dashboard(symbol, days)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── 5大分析（トレンド / ニュース / SNS / 経済指標 / ボラ）──
+@app.get("/api/analysis/trend/{symbol}")
+async def analysis_trend(symbol: str, days: int = Query(default=200, ge=60, le=500)):
+    symbol = _validate_symbol(symbol)
+    return predict_trend(symbol, days)
+
+
+@app.get("/api/analysis/news/{symbol}")
+async def analysis_news(symbol: str, limit: int = Query(default=8, ge=3, le=15)):
+    symbol = _validate_symbol(symbol)
+    articles = await fetch_rss_news(symbol, limit)
+    headlines = [a["title"] for a in articles]
+    result = {
+        "symbol": symbol,
+        "articles": articles,
+        "ml": analyze_headlines_ml(headlines),
+        "openai": None,
+    }
+    if resolve_openai_api_key():
+        try:
+            ai = await analyze_news(symbol, limit)
+            result["openai"] = {
+                "summary": ai.get("summary"),
+                "sentiment": ai.get("sentiment"),
+                "sentiment_score": ai.get("sentiment_score"),
+                "key_topics": ai.get("key_topics"),
+                "market_impact": ai.get("market_impact"),
+            }
+        except Exception as e:
+            result["openai_error"] = str(e)
+    return result
+
+
+@app.get("/api/analysis/sns/{symbol}")
+async def analysis_sns(symbol: str, limit: int = Query(default=10, ge=3, le=25)):
+    symbol = _validate_symbol(symbol)
+    return await analyze_sns(symbol, limit)
+
+
+@app.get("/api/analysis/economic/{symbol}")
+async def analysis_economic(symbol: str):
+    symbol = _validate_symbol(symbol)
+    return await analyze_economic(symbol)
+
+
+@app.get("/api/analysis/volatility/{symbol}")
+async def analysis_volatility(symbol: str, days: int = Query(default=200, ge=60, le=500)):
+    symbol = _validate_symbol(symbol)
+    return predict_volatility(symbol, days)
+
+
+@app.get("/api/analysis/intelligence/{symbol}")
+async def analysis_intelligence(symbol: str, days: int = Query(default=200, ge=60, le=500)):
+    symbol = _validate_symbol(symbol)
+    try:
+        return await build_intelligence(symbol, days)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

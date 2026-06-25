@@ -38,6 +38,13 @@ FX通貨ペアのテクニカル分析・ファンダメンタル分析ツール
 - **OANDA**: 成行注文（API 未設定時はペーパー取引）
 - **React ダッシュボード**: Next.js 統合 UI
 
+### マーケット分析 (`/analysis`)
+- **トレンド予測**: RandomForest + テクニカルルール + MTF 統合
+- **ニュース分析**: Google News RSS + ML / OpenAI センチメント
+- **SNS分析**: Reddit 投稿収集 + キーワードセンチメント
+- **経済指標分析**: 雇用・CPI・FOMC・日銀・GDP のスコアリング
+- **ボラティリティ予測**: ATR / EWMA + RandomForest 予測
+
 > API 層は Spring Boot ではなく **FastAPI** で実装しています（同等の REST API / BFF 役割）。
 
 ## セットアップ
@@ -56,6 +63,41 @@ docker compose up -d
 PostgreSQL: `localhost:5433` / DynamoDB Local: `localhost:8001`
 
 > ポート5432が他のPostgreSQLと競合する場合があるため、5433を使用しています。
+
+## SaaS 機能
+
+マルチテナント対応（v2.0）:
+
+| 機能 | 説明 |
+|------|------|
+| **テナント** | 組織単位のワークスペース（登録時に自動作成） |
+| **認証** | JWT ログイン + API キー（`X-API-Key: fx_...`） |
+| **プラン** | Free / Pro / Enterprise（日次 API 上限・機能ゲート） |
+| **利用量** | テナントごとの日次 API カウント |
+| **データ分離** | 注文・TradingView シグナルは `tenant_id` で分離 |
+
+### プラン概要
+
+| プラン | 月額 | API/日 | AI | OANDA | 統合分析 |
+|--------|------|--------|-----|-------|----------|
+| Free | $0 | 100 | ✗ | ✗ | ✗ |
+| Pro | $49 | 2,000 | ✓ | ✓ | ✓ |
+| Enterprise | $199 | 50,000 | ✓ | ✓ | ✓ |
+
+### 認証 API
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| POST | `/api/auth/register` | 新規テナント + ユーザー登録 |
+| POST | `/api/auth/login` | ログイン → JWT |
+| GET | `/api/auth/me` | セッション・利用量 |
+| GET/POST | `/api/auth/api-keys` | API キー管理 |
+| GET | `/api/billing/plans` | プラン一覧 |
+| POST | `/api/billing/upgrade` | プラン変更（デモ） |
+
+UI: `/register` · `/login` · `/settings` · `/pricing`
+
+TradingView Webhook（SaaS 時）: ヘッダー `X-API-Key` でテナントを特定
 
 ### 2. バックエンド
 
@@ -94,6 +136,11 @@ UI: http://localhost:3000
 | 変数 | 説明 |
 |------|------|
 | `DATABASE_URL` | PostgreSQL接続文字列 |
+| `SAAS_ENABLED` | SaaS モード（`false` で従来のオープン API） |
+| `JWT_SECRET` | JWT 署名キー（本番必須・長いランダム文字列） |
+| `JWT_EXPIRE_HOURS` | トークン有効時間（既定 72） |
+| `NEXT_PUBLIC_SAAS_ENABLED` | フロントのログイン必須（`false` で UI もオープン） |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook 署名（任意） |
 | `DYNAMODB_ENDPOINT` | DynamoDB Local エンドポイント |
 | `FRED_API_KEY` | FRED APIキー（ファンダメンタルデータ取得用、任意） |
 | `OPENAI_API_KEY` | OpenAI APIキー（ニュース・AI分析用、任意） |
@@ -124,6 +171,12 @@ FRED APIキーは https://fred.stlouisfed.org/docs/api/api_key.html から無料
 | GET | `/api/oanda/status` | OANDA 口座状態 |
 | GET/POST | `/api/oanda/orders` | 注文一覧 / 成行注文 |
 | GET | `/api/dashboard` | 統合ダッシュボード BFF |
+| GET | `/api/analysis/trend/{symbol}` | トレンド予測 |
+| GET | `/api/analysis/news/{symbol}` | ニュース分析 |
+| GET | `/api/analysis/sns/{symbol}` | SNS（Reddit）分析 |
+| GET | `/api/analysis/economic/{symbol}` | 経済指標分析 |
+| GET | `/api/analysis/volatility/{symbol}` | ボラティリティ予測 |
+| GET | `/api/analysis/intelligence/{symbol}` | 5大分析 統合レポート |
 
 ## プロジェクト構成
 
@@ -175,6 +228,9 @@ fx/
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
 | `OPENAI_API_KEY` | Railway に登録した OpenAI API キー |
 | `OPENAI_MODEL` | `gpt-4o-mini`（任意） |
+| `JWT_SECRET` | 本番必須（Railway Secrets） |
+| `SAAS_ENABLED` | `true`（SaaS モード） |
+| `NEXT_PUBLIC_SAAS_ENABLED` | `true` |
 | `OANDA_API_TOKEN` | OANDA practice/live トークン（任意） |
 | `OANDA_ACCOUNT_ID` | OANDA 口座 ID（任意） |
 | `TRADINGVIEW_WEBHOOK_SECRET` | Webhook 認証（任意） |

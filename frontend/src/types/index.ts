@@ -315,3 +315,106 @@ export interface DashboardData {
   recent_orders: BrokerOrder[];
   stack: { api: string; frontend: string; note: string };
 }
+
+export interface TrendPrediction {
+  symbol: string;
+  source: string;
+  current_price: number;
+  trend: "bullish" | "bearish" | "neutral";
+  trend_label: string;
+  confidence: number;
+  horizon_days: number;
+  rule_based: { trend: string; reasons: string[] };
+  ml: {
+    status: string;
+    trend?: string;
+    confidence?: number;
+    horizon_days?: number;
+    test_accuracy?: number;
+    model?: string;
+  };
+  multi_timeframe: { alignment: string; alignment_label: string };
+}
+
+export interface VolatilityPrediction {
+  symbol: string;
+  source: string;
+  current_price: number;
+  forecast_days: number;
+  current: { atr: number; atr_percent: number; daily_volatility: number };
+  forecast: {
+    atr: number;
+    atr_percent: number;
+    daily_volatility_pct: number;
+    regime: string;
+    regime_label: string;
+    vol_trend: string;
+    vol_trend_label: string;
+    change_vs_current_pct: number;
+  };
+  ml: { status: string; model: string; predicted_atr: number };
+  interpretation: string;
+}
+
+export interface SNSPost {
+  title: string;
+  url: string;
+  subreddit: string;
+  score: number;
+  num_comments: number;
+  published_at: string;
+  source: string;
+}
+
+export interface SNSAnalysis {
+  symbol: string;
+  collected_at: string;
+  platform: string;
+  post_count: number;
+  posts: SNSPost[];
+  sentiment: MLNewsAnalysis;
+  engagement: string;
+  total_score: number;
+  total_comments: number;
+  subreddits: Record<string, number>;
+  summary: string;
+}
+
+export interface EconomicIndicator {
+  key: string;
+  name: string;
+  source: string;
+  latest_date?: string;
+  value?: number;
+  previous?: number;
+  forecast?: number;
+  unit?: string;
+  impact: string;
+  pair_direction: string;
+  comment: string;
+}
+
+export interface EconomicAnalysis {
+  symbol: string;
+  base_currency: string;
+  quote_currency: string;
+  pair_bias: "bullish" | "bearish" | "neutral";
+  pair_bias_label: string;
+  score: number;
+  indicators: EconomicIndicator[];
+  upcoming_events: CalendarEvent[];
+  high_impact_alerts: EventAlert[];
+  overview: string;
+}
+
+export interface IntelligenceReport {
+  symbol: string;
+  composite_score: number;
+  outlook: "bullish" | "bearish" | "neutral";
+  outlook_label: string;
+  trend: TrendPrediction;
+  news: NewsAnalysisResult;
+  sns: SNSAnalysis;
+  economic: EconomicAnalysis;
+  volatility: VolatilityPrediction;
+}

@@ -20,6 +20,7 @@ class TradingViewSignal(Base):
     __tablename__ = "tradingview_signals"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(Integer, nullable=True)
     symbol = Column(String(10), nullable=False)
     action = Column(String(10), nullable=False)
     price = Column(Numeric(18, 6))
@@ -36,7 +37,7 @@ def _ensure_table():
         logger.warning("tradingview_signals table: %s", e)
 
 
-def save_signal(payload: dict[str, Any]) -> dict:
+def save_signal(payload: dict[str, Any], tenant_id: int | None = None) -> dict:
     _ensure_table()
     symbol = str(payload.get("symbol", payload.get("ticker", "UNKNOWN"))).upper()
     symbol = symbol.replace("OANDA:", "").replace("FX:", "").split(":")[-1][:10]
@@ -52,12 +53,14 @@ def save_signal(payload: dict[str, Any]) -> dict:
         "strategy": strategy,
         "message": message,
         "source": "tradingview",
+        "tenant_id": tenant_id,
         "received_at": datetime.now(timezone.utc).isoformat(),
     }
 
     db: Session = SessionLocal()
     try:
         row = TradingViewSignal(
+            tenant_id=tenant_id,
             symbol=record["symbol"],
             action=record["action"],
             price=record["price"],
@@ -81,13 +84,15 @@ def save_signal(payload: dict[str, Any]) -> dict:
     return record
 
 
-def list_signals(symbol: str | None = None, limit: int = 20) -> list[dict]:
+def list_signals(symbol: str | None = None, limit: int = 20, tenant_id: int | None = None) -> list[dict]:
     _ensure_table()
     db: Session = SessionLocal()
     try:
         q = select(TradingViewSignal).order_by(desc(TradingViewSignal.received_at)).limit(limit)
         if symbol:
             q = q.where(TradingViewSignal.symbol == symbol.upper())
+        if tenant_id is not None:
+            q = q.where(TradingViewSignal.tenant_id == tenant_id)
         rows = db.execute(q).scalars().all()
         if rows:
             return [

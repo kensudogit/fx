@@ -24,6 +24,13 @@ class Settings(BaseSettings):
 
     tradingview_webhook_secret: str = ""
 
+    jwt_secret: str = "change-me-in-production-use-long-random-string"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_hours: int = 72
+
+    saas_enabled: bool = True
+    stripe_webhook_secret: str = ""
+
     cors_origins: str = "http://localhost:3000"
     port: int = 8000
 

@@ -26,6 +26,7 @@ class BrokerOrder(Base):
     __tablename__ = "broker_orders"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(Integer, nullable=True)
     symbol = Column(String(10), nullable=False)
     side = Column(String(10), nullable=False)
     units = Column(Integer, nullable=False)
@@ -86,7 +87,7 @@ def get_account_summary() -> dict:
     }
 
 
-def place_market_order(symbol: str, side: str, units: int) -> dict:
+def place_market_order(symbol: str, side: str, units: int, tenant_id: int | None = None) -> dict:
     symbol = symbol.upper()
     side = side.lower()
     if side not in ("buy", "sell"):
@@ -94,7 +95,7 @@ def place_market_order(symbol: str, side: str, units: int) -> dict:
     signed_units = abs(units) if side == "buy" else -abs(units)
 
     if not is_oanda_configured():
-        return _save_paper_order(symbol, side, abs(units))
+        return _save_paper_order(symbol, side, abs(units), tenant_id)
 
     instrument = SYMBOL_TO_OANDA.get(symbol)
     if not instrument:
@@ -124,15 +125,16 @@ def place_market_order(symbol: str, side: str, units: int) -> dict:
         fill_price=float(fill.get("price", 0)) if fill.get("price") else None,
         broker="oanda",
         external_id=str(fill.get("id", "")),
+        tenant_id=tenant_id,
     )
 
 
-def _save_paper_order(symbol: str, side: str, units: int) -> dict:
+def _save_paper_order(symbol: str, side: str, units: int, tenant_id: int | None = None) -> dict:
     from src.data.market_data import get_ohlcv_data
 
     df, _ = get_ohlcv_data(symbol, 30)
     price = float(df["close"].iloc[-1])
-    return _save_order(symbol, side, units, "FILLED", price, "paper", f"paper-{datetime.now().timestamp():.0f}")
+    return _save_order(symbol, side, units, "FILLED", price, "paper", f"paper-{datetime.now().timestamp():.0f}", tenant_id)
 
 
 def _save_order(
@@ -143,6 +145,7 @@ def _save_order(
     fill_price: float | None,
     broker: str,
     external_id: str,
+    tenant_id: int | None = None,
 ) -> dict:
     _ensure_table()
     record = {
@@ -166,6 +169,7 @@ def _save_order(
             fill_price=fill_price,
             broker=broker,
             external_id=external_id,
+            tenant_id=tenant_id,
             created_at=datetime.now(timezone.utc),
         )
         db.add(row)
@@ -182,13 +186,14 @@ def _save_order(
     return record
 
 
-def list_orders(limit: int = 20) -> list[dict]:
+def list_orders(limit: int = 20, tenant_id: int | None = None) -> list[dict]:
     _ensure_table()
     db = SessionLocal()
     try:
-        rows = db.execute(
-            select(BrokerOrder).order_by(desc(BrokerOrder.created_at)).limit(limit)
-        ).scalars().all()
+        q = select(BrokerOrder).order_by(desc(BrokerOrder.created_at)).limit(limit)
+        if tenant_id is not None:
+            q = q.where(BrokerOrder.tenant_id == tenant_id)
+        rows = db.execute(q).scalars().all()
         if rows:
             return [
                 {

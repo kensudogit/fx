@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { UsageGuidePanel } from "@/components/UsageGuidePanel";
+import { AuthProvider } from "@/context/AuthContext";
+import { NavBar } from "@/components/NavBar";
 
 export const metadata: Metadata = {
   title: "FX Tool - テクニカル・ファンダメンタル分析",
@@ -15,23 +17,13 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <header>
-          <div className="container">
-            <a href="/" className="logo">
-              FX Tool
-            </a>
-            <nav>
-              <a href="/">テクニカル分析</a>
-              <a href="/fundamental">ファンダメンタル分析</a>
-              <a href="/ai">AI分析</a>
-              <a href="/dashboard">統合ダッシュボード</a>
-            </nav>
-          </div>
-        </header>
-        <main>
-          <div className="container">{children}</div>
-        </main>
-        <UsageGuidePanel />
+        <AuthProvider>
+          <NavBar />
+          <main>
+            <div className="container">{children}</div>
+          </main>
+          <UsageGuidePanel />
+        </AuthProvider>
       </body>
     </html>
   );
