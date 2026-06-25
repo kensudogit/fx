@@ -87,7 +87,14 @@ def get_account_summary() -> dict:
     }
 
 
-def place_market_order(symbol: str, side: str, units: int, tenant_id: int | None = None) -> dict:
+def place_market_order(
+    symbol: str,
+    side: str,
+    units: int,
+    tenant_id: int | None = None,
+    stop_loss: float | None = None,
+    take_profit: float | None = None,
+) -> dict:
     symbol = symbol.upper()
     side = side.lower()
     if side not in ("buy", "sell"):
@@ -95,21 +102,25 @@ def place_market_order(symbol: str, side: str, units: int, tenant_id: int | None
     signed_units = abs(units) if side == "buy" else -abs(units)
 
     if not is_oanda_configured():
-        return _save_paper_order(symbol, side, abs(units), tenant_id)
+        return _save_paper_order(symbol, side, abs(units), tenant_id, stop_loss, take_profit)
 
     instrument = SYMBOL_TO_OANDA.get(symbol)
     if not instrument:
         raise ValueError(f"Unsupported symbol for OANDA: {symbol}")
 
-    payload = {
-        "order": {
-            "instrument": instrument,
-            "units": str(signed_units),
-            "type": "MARKET",
-            "timeInForce": "FOK",
-            "positionFill": "DEFAULT",
-        }
+    order_body: dict[str, Any] = {
+        "instrument": instrument,
+        "units": str(signed_units),
+        "type": "MARKET",
+        "timeInForce": "FOK",
+        "positionFill": "DEFAULT",
     }
+    if stop_loss is not None:
+        order_body["stopLossOnFill"] = {"price": str(round(stop_loss, 5))}
+    if take_profit is not None:
+        order_body["takeProfitOnFill"] = {"price": str(round(take_profit, 5))}
+
+    payload = {"order": order_body}
     url = f"{_base_url()}/accounts/{settings.oanda_account_id}/orders"
     with httpx.Client(timeout=20.0) as client:
         res = client.post(url, headers=_headers(), json=payload)
@@ -117,7 +128,7 @@ def place_market_order(symbol: str, side: str, units: int, tenant_id: int | None
         body = res.json()
 
     fill = body.get("orderFillTransaction") or body.get("orderCreateTransaction") or {}
-    return _save_order(
+    record = _save_order(
         symbol=symbol,
         side=side,
         units=abs(units),
@@ -127,14 +138,64 @@ def place_market_order(symbol: str, side: str, units: int, tenant_id: int | None
         external_id=str(fill.get("id", "")),
         tenant_id=tenant_id,
     )
+    if stop_loss is not None:
+        record["stop_loss"] = stop_loss
+    if take_profit is not None:
+        record["take_profit"] = take_profit
+    return record
 
 
-def _save_paper_order(symbol: str, side: str, units: int, tenant_id: int | None = None) -> dict:
+def close_position(symbol: str, side: str, units: int, tenant_id: int | None = None) -> dict:
+    """保有方向を指定して決済（side=現在のポジション方向）"""
+    exit_side = "sell" if side == "buy" else "buy"
+    return place_market_order(symbol, exit_side, units, tenant_id)
+
+
+def get_open_positions(tenant_id: int | None = None) -> list[dict]:
+    if not is_oanda_configured():
+        from src.autotrade.positions import list_open_positions
+
+        return list_open_positions(tenant_id)
+
+    url = f"{_base_url()}/accounts/{settings.oanda_account_id}/openPositions"
+    with httpx.Client(timeout=20.0) as client:
+        res = client.get(url, headers=_headers())
+        res.raise_for_status()
+        positions = res.json().get("positions", [])
+
+    result = []
+    for p in positions:
+        inst = p.get("instrument", "")
+        sym = inst.replace("_", "")
+        long_u = int(p.get("long", {}).get("units", 0))
+        short_u = int(p.get("short", {}).get("units", 0))
+        if long_u > 0:
+            result.append({"symbol": sym, "side": "buy", "units": long_u})
+        if short_u < 0:
+            result.append({"symbol": sym, "side": "sell", "units": abs(short_u)})
+    return result
+
+
+def _save_paper_order(
+    symbol: str,
+    side: str,
+    units: int,
+    tenant_id: int | None = None,
+    stop_loss: float | None = None,
+    take_profit: float | None = None,
+) -> dict:
     from src.data.market_data import get_ohlcv_data
 
     df, _ = get_ohlcv_data(symbol, 30)
     price = float(df["close"].iloc[-1])
-    return _save_order(symbol, side, units, "FILLED", price, "paper", f"paper-{datetime.now().timestamp():.0f}", tenant_id)
+    record = _save_order(
+        symbol, side, units, "FILLED", price, "paper", f"paper-{datetime.now().timestamp():.0f}", tenant_id
+    )
+    if stop_loss is not None:
+        record["stop_loss"] = stop_loss
+    if take_profit is not None:
+        record["take_profit"] = take_profit
+    return record
 
 
 def _save_order(

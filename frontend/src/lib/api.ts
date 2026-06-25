@@ -408,3 +408,40 @@ export async function runAutoTradeAll(): Promise<{
 }> {
   return fetchAPI("/api/autotrade/run", { method: "POST" });
 }
+
+export async function getAutoTradePresets(): Promise<{ presets: import("@/types").AutoTradePreset[] }> {
+  return fetchAPI("/api/autotrade/presets");
+}
+
+export async function applyAutoTradePreset(presetId: string): Promise<{ config: import("@/types").AutoTradeConfig }> {
+  return fetchAPI("/api/autotrade/presets/apply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preset_id: presetId }),
+  });
+}
+
+export async function autoSelectAutoTrade(opts: {
+  capital?: string;
+  horizon?: string;
+  risk_appetite?: string;
+  style?: string;
+  apply?: boolean;
+}): Promise<{ recommended_preset: string; preset_label: string; config: import("@/types").AutoTradeConfig; rationale: string }> {
+  return fetchAPI("/api/autotrade/autoselect", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...opts, preferred_symbols: null }),
+  });
+}
+
+export async function simulateAutoTrade(
+  symbol: string,
+  opts: { days?: number; accountBalance?: number; presetId?: string } = {}
+): Promise<import("@/types").AutoTradeSimulation> {
+  const q = new URLSearchParams();
+  if (opts.days) q.set("days", String(opts.days));
+  if (opts.accountBalance) q.set("account_balance", String(opts.accountBalance));
+  if (opts.presetId) q.set("preset_id", opts.presetId);
+  return fetchAPI(`/api/autotrade/simulate/${symbol}?${q}`);
+}

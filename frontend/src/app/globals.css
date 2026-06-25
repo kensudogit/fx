@@ -1327,3 +1327,49 @@ main {
   border: 1px solid var(--border);
   background: var(--bg-secondary);
 }
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.preset-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  cursor: pointer;
+}
+
+.preset-card strong {
+  font-size: 0.9rem;
+}
+
+.preset-card .hint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.preset-meta {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.preset-active {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.form-grid select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+}

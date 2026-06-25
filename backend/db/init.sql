@@ -181,3 +181,22 @@ CREATE TABLE IF NOT EXISTS autotrade_runs (
 
 CREATE INDEX IF NOT EXISTS idx_autotrade_runs_tenant ON autotrade_runs(tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_autotrade_runs_symbol ON autotrade_runs(symbol, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS autotrade_positions (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+    symbol VARCHAR(10) NOT NULL,
+    side VARCHAR(10) NOT NULL,
+    units INTEGER NOT NULL,
+    entry_price NUMERIC(18, 6) NOT NULL,
+    stop_loss NUMERIC(18, 6),
+    take_profit NUMERIC(18, 6),
+    status VARCHAR(20) DEFAULT 'OPEN',
+    order_id INTEGER,
+    opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    closed_at TIMESTAMPTZ,
+    close_price NUMERIC(18, 6),
+    close_reason VARCHAR(50)
+);
+
+CREATE INDEX IF NOT EXISTS idx_autotrade_positions_open ON autotrade_positions(tenant_id, symbol, status);

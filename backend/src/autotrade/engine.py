@@ -12,6 +12,7 @@ from src.autotrade.evaluator import (
     gather_signal_context,
 )
 from src.autotrade.models import get_config, save_run
+from src.autotrade.positions import check_exits, open_position
 from src.broker.oanda import place_market_order
 
 logger = logging.getLogger(__name__)
@@ -82,7 +83,14 @@ async def execute_order(
         order_plan = compute_order_size(symbol, get_config(tenant_id), fused["context"], action)
 
     try:
-        order = place_market_order(symbol, action, order_plan["units"], tenant_id)
+        order = place_market_order(
+            symbol,
+            action,
+            order_plan["units"],
+            tenant_id,
+            stop_loss=order_plan.get("stop_loss"),
+            take_profit=order_plan.get("take_profit"),
+        )
     except Exception as e:
         logger.exception("autotrade order failed: %s", e)
         rec = _result(
@@ -90,6 +98,18 @@ async def execute_order(
         )
         save_run(rec, tenant_id)
         return rec
+
+    fill_price = order.get("fill_price") or order_plan.get("entry_price")
+    open_position(
+        tenant_id,
+        symbol,
+        action,
+        order_plan["units"],
+        float(fill_price) if fill_price else 0,
+        order_plan.get("stop_loss"),
+        order_plan.get("take_profit"),
+        order.get("id"),
+    )
 
     rec = _result(
         symbol,
@@ -118,7 +138,22 @@ async def run_cycle(tenant_id: int | None = None, trigger: str = "scheduler") ->
     for symbol in config.get("symbols", ["USDJPY"]):
         try:
             context = await gather_signal_context(symbol)
+            price = context["price"]
             fused = fuse_signals(context, config)
+
+            for ex in check_exits(
+                symbol, price, tenant_id,
+                reverse_action=fused["action"],
+                auto_exit_on_reverse=config.get("auto_exit_on_reverse", True),
+            ):
+                rec = _result(
+                    symbol, "executed", "close", fused["confidence"],
+                    f"決済 ({ex.get('close_reason', 'exit')}) @ {price}",
+                    {"exit": ex, "price": price}, tenant_id, trigger=trigger,
+                )
+                save_run(rec, tenant_id)
+                results.append(rec)
+
             passed, guard_reason = check_risk_guards(symbol, config, tenant_id, fused)
 
             snapshot = {

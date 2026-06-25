@@ -14,6 +14,7 @@ DEFAULT_CONFIG = {
     "enabled": False,
     "symbols": ["USDJPY"],
     "mode": "paper",
+    "strategy_preset": "balanced",
     "min_confidence": 65,
     "risk_percent": 1.0,
     "account_balance": 10000,
@@ -23,9 +24,15 @@ DEFAULT_CONFIG = {
     "max_daily_trades": 3,
     "cooldown_minutes": 60,
     "auto_execute_tradingview": True,
+    "auto_exit_on_reverse": True,
+    "use_stop_loss": True,
+    "use_take_profit": True,
+    "risk_reward": 2.0,
     "max_lots": 1.0,
     "min_lots": 0.01,
+    "min_units": 1000,
     "scheduler_interval_minutes": 15,
+    "allow_add_to_position": False,
 }
 
 _memory_configs: dict[int, dict] = {}

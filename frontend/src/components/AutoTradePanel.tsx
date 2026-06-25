@@ -2,15 +2,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  applyAutoTradePreset,
+  autoSelectAutoTrade,
   evaluateAutoTrade,
   getAutoTradeConfig,
+  getAutoTradePresets,
   getAutoTradeStatus,
   getSymbols,
   runAutoTradeAll,
   runAutoTradeSymbol,
+  simulateAutoTrade,
   updateAutoTradeConfig,
 } from "@/lib/api";
-import type { AutoTradeConfig, AutoTradeEvaluateResult, AutoTradeRun, AutoTradeStatus } from "@/types";
+import type {
+  AutoTradeConfig,
+  AutoTradeEvaluateResult,
+  AutoTradePreset,
+  AutoTradeRun,
+  AutoTradeSimulation,
+  AutoTradeStatus,
+} from "@/types";
 
 const SOURCE_LABELS: Record<string, string> = {
   ai: "AI シグナル",
@@ -44,6 +55,12 @@ export default function AutoTradePanel() {
   const [config, setConfig] = useState<AutoTradeConfig | null>(null);
   const [status, setStatus] = useState<AutoTradeStatus | null>(null);
   const [evaluation, setEvaluation] = useState<AutoTradeEvaluateResult | null>(null);
+  const [presets, setPresets] = useState<AutoTradePreset[]>([]);
+  const [simulation, setSimulation] = useState<AutoTradeSimulation | null>(null);
+  const [autoselectMsg, setAutoselectMsg] = useState<string | null>(null);
+  const [capital, setCapital] = useState("medium");
+  const [horizon, setHorizon] = useState("medium");
+  const [riskAppetite, setRiskAppetite] = useState("medium");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
@@ -65,6 +82,7 @@ export default function AutoTradePanel() {
 
   useEffect(() => {
     getSymbols().then((r) => setSymbols(r.symbols));
+    getAutoTradePresets().then((r) => setPresets(r.presets)).catch(() => {});
     load();
   }, [load]);
 
@@ -123,6 +141,58 @@ export default function AutoTradePanel() {
     }
   };
 
+  const handleApplyPreset = async (presetId: string) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await applyAutoTradePreset(presetId);
+      setConfig(res.config);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "プリセット適用に失敗しました");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAutoselect = async (apply: boolean) => {
+    setRunning(true);
+    setError(null);
+    try {
+      const res = await autoSelectAutoTrade({
+        capital,
+        horizon,
+        risk_appetite: riskAppetite,
+        apply,
+      });
+      setAutoselectMsg(res.rationale);
+      if (apply) {
+        setConfig(res.config);
+        await load();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "オートセレクトに失敗しました");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const handleSimulate = async () => {
+    setRunning(true);
+    setError(null);
+    try {
+      const res = await simulateAutoTrade(symbol, {
+        accountBalance: config?.account_balance,
+        presetId: config?.strategy_preset ?? "balanced",
+      });
+      setSimulation(res);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "シミュレーションに失敗しました");
+    } finally {
+      setRunning(false);
+    }
+  };
+
   if (loading && !config) {
     return <div className="loading">自動取引設定を読み込み中...</div>;
   }
@@ -131,6 +201,8 @@ export default function AutoTradePanel() {
 
   const scheduler = status?.scheduler;
   const runs = status?.recent_runs ?? [];
+  const performance = status?.performance;
+  const openPositions = status?.open_positions ?? [];
 
   return (
     <>
@@ -153,10 +225,155 @@ export default function AutoTradePanel() {
       </div>
 
       <p className="hint stack-note">
-        AI・テクニカル・統合分析・MTF・TradingView を加重統合し、リスクガード通過後に OANDA / ペーパーで自動約定します。
+        トライオートFX同様 — プリセット選択 · オートセレクト · シミュレーション · SL/TP 自動決済に対応。
       </p>
 
       {error && <p className="error-text">{error}</p>}
+
+      <div className="card" style={{ marginBottom: "1.5rem" }}>
+        <h2>セレクト — プリセット戦略</h2>
+        <p className="hint">用意されたルールから選ぶだけで開始（現在: {config.strategy_preset ?? "balanced"}）</p>
+        <div className="preset-grid">
+          {presets.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`preset-card ${config.strategy_preset === p.id ? "preset-active" : ""}`}
+              disabled={saving}
+              onClick={() => handleApplyPreset(p.id)}
+            >
+              <strong>{p.label}</strong>
+              <span className="hint">{p.description}</span>
+              <span className="preset-meta">信頼度 {p.min_confidence}% · RR {p.risk_reward}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid-2" style={{ marginBottom: "1.5rem" }}>
+        <div className="card">
+          <h2>オートセレクト（3 問）</h2>
+          <div className="form-grid">
+            <label>
+              運用資金
+              <select value={capital} onChange={(e) => setCapital(e.target.value)}>
+                <option value="small">小額 ($5,000)</option>
+                <option value="medium">中程度 ($20,000)</option>
+                <option value="large">大額 ($100,000)</option>
+              </select>
+            </label>
+            <label>
+              運用期間
+              <select value={horizon} onChange={(e) => setHorizon(e.target.value)}>
+                <option value="short">短期</option>
+                <option value="medium">中期</option>
+                <option value="long">長期</option>
+              </select>
+            </label>
+            <label>
+              リスク許容度
+              <select value={riskAppetite} onChange={(e) => setRiskAppetite(e.target.value)}>
+                <option value="low">低</option>
+                <option value="medium">標準</option>
+                <option value="high">高</option>
+              </select>
+            </label>
+          </div>
+          <div className="order-controls" style={{ marginTop: "0.75rem" }}>
+            <button type="button" className="btn-secondary" disabled={running} onClick={() => handleAutoselect(false)}>
+              提案を見る
+            </button>
+            <button type="button" className="btn-primary" disabled={running} onClick={() => handleAutoselect(true)}>
+              適用して保存
+            </button>
+          </div>
+          {autoselectMsg && <p className="hint">{autoselectMsg}</p>}
+        </div>
+
+        <div className="card">
+          <h2>運用前シミュレーション</h2>
+          <p className="hint">{symbol} · 過去 365 日バックテスト + 推奨証拠金</p>
+          <button type="button" className="btn-secondary" disabled={running} onClick={handleSimulate}>
+            シミュレーション実行
+          </button>
+          {simulation && (
+            <div className="eval-result" style={{ marginTop: "1rem" }}>
+              <div className="stat-grid">
+                <div className="stat-item">
+                  <div className="label">評価</div>
+                  <div className="value">{simulation.assessment.grade}</div>
+                </div>
+                <div className="stat-item">
+                  <div className="label">勝率</div>
+                  <div className="value">{simulation.backtest.win_rate}%</div>
+                </div>
+                <div className="stat-item">
+                  <div className="label">推奨証拠金</div>
+                  <div className="value">${simulation.capital.recommended_margin_usd.toLocaleString()}</div>
+                </div>
+                <div className="stat-item">
+                  <div className="label">安全証拠金</div>
+                  <div className="value">${simulation.capital.safe_margin_usd.toLocaleString()}</div>
+                </div>
+              </div>
+              <p className="hint">{simulation.assessment.summary}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {performance && (
+        <div className="card" style={{ marginBottom: "1.5rem" }}>
+          <h2>運用パフォーマンス</h2>
+          <div className="stat-grid">
+            <div className="stat-item">
+              <div className="label">約定率</div>
+              <div className="value">{performance.summary.execution_rate_pct}%</div>
+            </div>
+            <div className="stat-item">
+              <div className="label">約定 / ブロック</div>
+              <div className="value">
+                {performance.summary.executed} / {performance.summary.blocked}
+              </div>
+            </div>
+            <div className="stat-item">
+              <div className="label">平均信頼度</div>
+              <div className="value">{performance.summary.avg_confidence}%</div>
+            </div>
+          </div>
+          <p className="hint">{performance.maintenance_hint}</p>
+        </div>
+      )}
+
+      {openPositions.length > 0 && (
+        <div className="card" style={{ marginBottom: "1.5rem" }}>
+          <h2>オープンポジション</h2>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>通貨</th>
+                <th>方向</th>
+                <th>数量</th>
+                <th>参入</th>
+                <th>SL</th>
+                <th>TP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {openPositions.map((p) => (
+                <tr key={`${p.symbol}-${p.side}`}>
+                  <td>{p.symbol}</td>
+                  <td className={p.side === "buy" ? "text-buy" : "text-sell"}>{p.side}</td>
+                  <td>{p.units}</td>
+                  <td>{p.entry_price}</td>
+                  <td>{p.stop_loss ?? "—"}</td>
+                  <td>{p.take_profit ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="grid-2">
         <div className="card">
@@ -314,6 +531,30 @@ export default function AutoTradePanel() {
               />
               TradingView Webhook で即時実行
             </label>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={config.use_stop_loss !== false}
+                onChange={(e) => saveConfig({ use_stop_loss: e.target.checked })}
+              />
+              損切り (SL) を自動設定
+            </label>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={config.use_take_profit !== false}
+                onChange={(e) => saveConfig({ use_take_profit: e.target.checked })}
+              />
+              利確 (TP) を自動設定
+            </label>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={config.auto_exit_on_reverse !== false}
+                onChange={(e) => saveConfig({ auto_exit_on_reverse: e.target.checked })}
+              />
+              逆シグナルで自動決済
+            </label>
           </div>
         </div>
 
@@ -382,6 +623,12 @@ export default function AutoTradePanel() {
                 <p className="hint">
                   推奨: {evaluation.signal_snapshot.order_plan.side}{" "}
                   {evaluation.signal_snapshot.order_plan.units} units
+                  {evaluation.signal_snapshot.order_plan.stop_loss != null && (
+                    <> · SL {evaluation.signal_snapshot.order_plan.stop_loss}</>
+                  )}
+                  {evaluation.signal_snapshot.order_plan.take_profit != null && (
+                    <> · TP {evaluation.signal_snapshot.order_plan.take_profit}</>
+                  )}
                 </p>
               ) : null}
             </div>

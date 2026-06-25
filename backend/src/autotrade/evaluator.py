@@ -14,6 +14,7 @@ from src.analysis.technical import compute_all_indicators
 from src.analysis.volatility import calc_atr
 from src.api.intelligence import build_intelligence
 from src.autotrade.models import count_today_trades, last_executed_at
+from src.autotrade.positions import has_open_position
 from src.broker.oanda import get_account_summary
 from src.data.market_data import get_ohlcv_data
 
@@ -198,11 +199,14 @@ def check_risk_guards(
         if elapsed < cooldown:
             return False, f"クールダウン中（残り {int(cooldown - elapsed)} 分）"
 
+    if not config.get("allow_add_to_position", False) and has_open_position(tenant_id, symbol):
+        return False, "同一通貨にオープンポジションあり — 決済後に再エントリー"
+
     return True, "リスクチェック通過"
 
 
 def compute_order_size(symbol: str, config: dict, context: dict, side: str) -> dict:
-    """ATR ベースのポジションサイズ → OANDA units"""
+    """ATR ベースのポジションサイズ + SL/TP 価格"""
     acct = get_account_summary()
     balance = float(config.get("account_balance") or acct.get("balance") or 10000)
     risk_pct = float(config.get("risk_percent", 1.0))
@@ -212,7 +216,21 @@ def compute_order_size(symbol: str, config: dict, context: dict, side: str) -> d
     sizing = calculate_position_size(symbol, price, balance, risk_pct, atr=atr)
     lots = sizing["recommended_lots"]
     lots = max(float(config.get("min_lots", 0.01)), min(lots, float(config.get("max_lots", 1.0))))
-    units = max(1, int(lots * 100_000))
+    min_units = int(config.get("min_units", 1000))
+    units = max(min_units, int(lots * 100_000))
+
+    stop_pips = sizing.get("stop_pips", 30)
+    pip = pip_size(symbol)
+    rr = float(config.get("risk_reward", 2.0))
+    stop_dist = stop_pips * pip
+    tp_dist = stop_dist * rr
+
+    if side == "buy":
+        stop_loss = round(price - stop_dist, 5 if not symbol.endswith("JPY") else 3) if config.get("use_stop_loss", True) else None
+        take_profit = round(price + tp_dist, 5 if not symbol.endswith("JPY") else 3) if config.get("use_take_profit", True) else None
+    else:
+        stop_loss = round(price + stop_dist, 5 if not symbol.endswith("JPY") else 3) if config.get("use_stop_loss", True) else None
+        take_profit = round(price - tp_dist, 5 if not symbol.endswith("JPY") else 3) if config.get("use_take_profit", True) else None
 
     return {
         "units": units,
@@ -220,4 +238,9 @@ def compute_order_size(symbol: str, config: dict, context: dict, side: str) -> d
         "sizing": sizing,
         "account_balance": balance,
         "side": side,
+        "entry_price": price,
+        "stop_loss": stop_loss,
+        "take_profit": take_profit,
+        "stop_pips": stop_pips,
+        "risk_reward": rr,
     }

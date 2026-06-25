@@ -520,6 +520,7 @@ export interface AutoTradeConfig {
   enabled: boolean;
   symbols: string[];
   mode: "paper" | "live";
+  strategy_preset?: string;
   min_confidence: number;
   risk_percent: number;
   account_balance: number;
@@ -529,15 +530,62 @@ export interface AutoTradeConfig {
   max_daily_trades: number;
   cooldown_minutes: number;
   auto_execute_tradingview: boolean;
+  auto_exit_on_reverse?: boolean;
+  use_stop_loss?: boolean;
+  use_take_profit?: boolean;
+  risk_reward?: number;
   max_lots: number;
   min_lots: number;
+  min_units?: number;
   scheduler_interval_minutes: number;
+  allow_add_to_position?: boolean;
+}
+
+export interface AutoTradePreset {
+  id: string;
+  label: string;
+  description: string;
+  style: string;
+  min_confidence: number;
+  risk_percent: number;
+  risk_reward: number;
+}
+
+export interface AutoTradeSimulation {
+  symbol: string;
+  backtest: { total_trades: number; win_rate: number; avg_return_pct: number };
+  capital: {
+    recommended_margin_usd: number;
+    safe_margin_usd: number;
+    note: string;
+  };
+  assessment: {
+    grade: string;
+    win_rate: number;
+    ready_to_deploy: boolean;
+    summary: string;
+  };
+}
+
+export interface AutoTradePerformance {
+  summary: {
+    total_runs: number;
+    executed: number;
+    blocked: number;
+    execution_rate_pct: number;
+    avg_confidence: number;
+  };
+  maintenance_hint: string;
+  top_block_reasons: Array<{ reason: string; count: number }>;
 }
 
 export interface AutoTradeOrderPlan {
   side: string;
   units: number;
   lots?: number;
+  stop_loss?: number;
+  take_profit?: number;
+  entry_price?: number;
 }
 
 export interface AutoTradeSignalSnapshot {
@@ -578,4 +626,6 @@ export interface AutoTradeStatus {
     enabled_tenants: number;
   };
   recent_runs: AutoTradeRun[];
+  performance?: AutoTradePerformance;
+  open_positions?: Array<{ symbol: string; side: string; units: number; entry_price: number; stop_loss?: number; take_profit?: number }>;
 }
