@@ -65,6 +65,16 @@ def auth_register(body: RegisterBody, db: Session = Depends(get_db)):
         return register_tenant(db, body.email, body.password, body.org_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("Registration failed: %s", e)
+        db.rollback()
+        detail = "登録に失敗しました。データベースの初期化を確認してください。"
+        err = str(e).lower()
+        if "does not exist" in err or "undefinedtable" in err or "relation" in err:
+            detail = "認証テーブルが未作成です。アプリを再起動してから再試行してください。"
+        elif "no module named" in err:
+            detail = "サーバー依存関係が不足しています。再デプロイが必要です。"
+        raise HTTPException(status_code=500, detail=detail)
 
 
 @router.post("/api/auth/login")
@@ -75,6 +85,10 @@ def auth_login(body: LoginBody, db: Session = Depends(get_db)):
         return login_user(db, body.email, body.password)
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
+    except Exception as e:
+        logger.exception("Login failed: %s", e)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="ログイン処理に失敗しました")
 
 
 @router.get("/api/auth/me")

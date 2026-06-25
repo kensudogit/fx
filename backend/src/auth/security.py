@@ -4,35 +4,39 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 import jwt
-from passlib.context import CryptContext
 
 from src.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 API_KEY_PREFIX = "fx_"
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    pwd_bytes = password.encode("utf-8")[:72]
+    return bcrypt.hashpw(pwd_bytes, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except (ValueError, TypeError):
+        return False
 
 
 def create_access_token(user_id: int, tenant_id: int, email: str, role: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=settings.jwt_expire_hours)
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(hours=settings.jwt_expire_hours)
     payload = {
         "sub": str(user_id),
         "tenant_id": tenant_id,
         "email": email,
         "role": role,
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "exp": int(expire.timestamp()),
+        "iat": int(now.timestamp()),
     }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    token = jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    return token if isinstance(token, str) else token.decode("utf-8")
 
 
 def decode_access_token(token: str) -> dict | None:

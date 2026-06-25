@@ -78,8 +78,10 @@ def init_database():
             try:
                 conn.execute(text(stmt))
             except Exception as e:
-                if "already exists" not in str(e).lower() and "duplicate" not in str(e).lower():
-                    logger.debug("SQL skip: %s", e)
+                msg = str(e).lower()
+                if "already exists" in msg or "duplicate" in msg:
+                    continue
+                logger.warning("SQL init statement skipped: %s — %s", stmt[:80], e)
 
 
 class InMemoryCache:

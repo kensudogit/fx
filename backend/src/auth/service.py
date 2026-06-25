@@ -37,6 +37,7 @@ def _slugify(name: str) -> str:
 
 
 def register_tenant(db: Session, email: str, password: str, org_name: str) -> dict:
+    init_auth_tables()
     email = email.strip().lower()
     existing = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if existing:
@@ -74,6 +75,7 @@ def register_tenant(db: Session, email: str, password: str, org_name: str) -> di
 
 
 def login_user(db: Session, email: str, password: str) -> dict:
+    init_auth_tables()
     email = email.strip().lower()
     user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if not user or not verify_password(password, user.password_hash):
