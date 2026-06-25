@@ -602,8 +602,11 @@ type SavedState = {
   expanded: boolean
 }
 
-function defaultPosition() {
+function defaultPosition(mobile = false) {
   if (typeof window === 'undefined') return { x: 24, y: 24 }
+  if (mobile || window.innerWidth < 768) {
+    return { x: 8, y: Math.max(72, window.innerHeight - 72) }
+  }
   const x = Math.max(16, window.innerWidth - PANEL_WIDTH - 24)
   const y = Math.max(72, window.innerHeight - 520)
   return { x, y }
@@ -655,19 +658,24 @@ export function UsageGuidePanel() {
   const [expanded, setExpanded] = useState(true)
   const [pos, setPos] = useState({ x: 24, y: 24 })
   const [dragging, setDragging] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    const mobile = window.innerWidth < 768
+    setIsMobile(mobile)
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as SavedState
-        setPos({ x: parsed.x, y: parsed.y })
-        setExpanded(parsed.expanded)
+        setPos(mobile ? defaultPosition(true) : { x: parsed.x, y: parsed.y })
+        setExpanded(mobile ? false : parsed.expanded)
       } catch {
-        setPos(defaultPosition())
+        setPos(defaultPosition(mobile))
+        if (mobile) setExpanded(false)
       }
     } else {
-      setPos(defaultPosition())
+      setPos(defaultPosition(mobile))
+      if (mobile) setExpanded(false)
     }
     setReady(true)
   }, [])
@@ -681,6 +689,9 @@ export function UsageGuidePanel() {
   useEffect(() => {
     if (!ready) return
     const onResize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (mobile) return
       const el = panelRef.current
       if (!el) return
       setPos((current) => clampPosition(current.x, current.y, el.offsetWidth, el.offsetHeight))
@@ -691,6 +702,7 @@ export function UsageGuidePanel() {
 
   const onHeaderPointerDown = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
+      if (isMobile) return
       if ((e.target as HTMLElement).closest('.usage-guide-toggle')) return
       dragRef.current = {
         pointerId: e.pointerId,
@@ -702,7 +714,7 @@ export function UsageGuidePanel() {
       setDragging(true)
       e.currentTarget.setPointerCapture(e.pointerId)
     },
-    [pos.x, pos.y],
+    [pos.x, pos.y, isMobile],
   )
 
   const onHeaderPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
@@ -734,8 +746,12 @@ export function UsageGuidePanel() {
   return (
     <div
       ref={panelRef}
-      className={`usage-guide-panel${expanded ? ' is-expanded' : ' is-collapsed'}${dragging ? ' is-dragging' : ''}`}
-      style={{ left: pos.x, top: pos.y, width: PANEL_WIDTH }}
+      className={`usage-guide-panel${expanded ? ' is-expanded' : ' is-collapsed'}${dragging ? ' is-dragging' : ''}${isMobile ? ' is-mobile' : ''}`}
+      style={
+        isMobile
+          ? undefined
+          : { left: pos.x, top: pos.y, width: PANEL_WIDTH }
+      }
       role="dialog"
       aria-label={L.title}
       aria-modal="false"

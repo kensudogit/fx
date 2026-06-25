@@ -1,0 +1,11 @@
+{
+  "name": "FX Tool",
+  "short_name": "FX Tool",
+  "description": "FX通貨ペアのテクニカル・ファンダメンタル分析ツール",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
+  "orientation": "any",
+  "lang": "ja"
+}
