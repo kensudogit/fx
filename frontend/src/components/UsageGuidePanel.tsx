@@ -452,8 +452,8 @@ const guideSections: readonly GuideSection[] = [
         title: 'プランと API キー（/settings）',
         body: 'Free プランでも AI 分析・マーケット分析は利用可能（日次 API 上限あり）。',
         items: [
-          'Free — 100 API/日 · AI · 分析 · Webhook',
-          'Pro — 2,000 API/日 · OANDA 注文 · 自動取引 · 統合インテリジェンス',
+          'Free — 100 API/日 · テクニカル · 分析 · AI · Webhook',
+          'Pro — 2,000 API/日 · AI Pro · OANDA · 自動取引 · 統合インテリジェンス',
           'API キー — 設定画面で発行 → TradingView Webhook に X-API-Key',
           '利用量 — 設定画面で本日の API 消費量を確認',
         ],

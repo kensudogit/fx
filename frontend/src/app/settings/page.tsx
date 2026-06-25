@@ -94,7 +94,9 @@ export default function SettingsPage() {
                 <p className="hint">API {p.daily_api_limit.toLocaleString()} 回/日</p>
                 <ul className="headline-list">
                   {p.features.ai && <li>AI分析</li>}
+                  {p.features.ai_pro && <li>AI Pro</li>}
                   {p.features.oanda_orders && <li>OANDA注文</li>}
+                  {p.features.autotrade && <li>自動取引</li>}
                   {p.features.analysis_intelligence && <li>統合インテリジェンス</li>}
                 </ul>
                 {session.tenant.plan !== p.id && (

@@ -112,14 +112,20 @@ class SaaSAuthMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=429,
                 content={
-                    "detail": f"1日のAPI利用上限 ({limit}) に達しました。プランをアップグレードしてください。",
+                    "detail": (
+                        f"1日のAPI利用上限 ({limit}) に達しました。"
+                        f"{' Pro プラン（2,000 回/日）へのアップグレードをご検討ください。' if ctx.plan == 'free' else ' 明日以降に再試行するか、プランをアップグレードしてください。'}"
+                    ),
                     "usage": used,
                     "limit": limit,
+                    "plan": ctx.plan,
                 },
             )
 
         if _requires_premium(path, method):
             feats = plan_features(ctx.plan)
+            if path.startswith("/api/pro/") and not feats.get("ai_pro"):
+                return JSONResponse(status_code=403, content={"detail": "AI Pro 機能は Pro プラン以上で利用できます"})
             if path.startswith("/api/ai/") and not feats.get("ai"):
                 return JSONResponse(status_code=403, content={"detail": "AI分析は Pro プラン以上で利用できます"})
             if path.startswith("/api/analysis/intelligence/") and not feats.get("analysis_intelligence"):

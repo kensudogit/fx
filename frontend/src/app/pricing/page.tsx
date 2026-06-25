@@ -29,7 +29,10 @@ export default function PricingPage() {
               <li>テクニカル・ファンダメンタル分析</li>
               {p.features.analysis_basic && <li>マーケット分析（5カテゴリ）</li>}
               {p.features.ai && <li>OpenAI 統合分析</li>}
+              {p.features.ai_pro && <li>AI Pro（7機能）</li>}
               {p.features.oanda_orders && <li>OANDA 注文</li>}
+              {p.features.autotrade && <li>自動取引エンジン</li>}
+              {p.features.analysis_intelligence && <li>統合インテリジェンス</li>}
               <li>APIキー {String(p.features.api_keys)} 本</li>
             </ul>
           </div>

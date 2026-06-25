@@ -18,6 +18,7 @@ from src.auth.security import (
     hash_password,
     verify_password,
 )
+from src.config import settings
 from src.db.database import SessionLocal
 
 
@@ -51,7 +52,7 @@ def register_tenant(db: Session, email: str, password: str, org_name: str) -> di
         slug = f"{base_slug}-{n}"
         n += 1
 
-    tenant = Tenant(name=org_name.strip(), slug=slug, plan="free")
+    tenant = Tenant(name=org_name.strip(), slug=slug, plan=settings.saas_default_plan)
     db.add(tenant)
     db.flush()
 

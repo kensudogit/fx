@@ -9,8 +9,9 @@ PLANS = {
             "technical": True,
             "fundamental": True,
             "analysis_basic": True,
-            "analysis_intelligence": True,
+            "analysis_intelligence": False,
             "ai": True,
+            "ai_pro": False,
             "oanda_orders": False,
             "autotrade": False,
             "api_keys": 1,
@@ -27,6 +28,7 @@ PLANS = {
             "analysis_basic": True,
             "analysis_intelligence": True,
             "ai": True,
+            "ai_pro": True,
             "oanda_orders": True,
             "autotrade": True,
             "api_keys": 5,
@@ -43,6 +45,7 @@ PLANS = {
             "analysis_basic": True,
             "analysis_intelligence": True,
             "ai": True,
+            "ai_pro": True,
             "oanda_orders": True,
             "autotrade": True,
             "api_keys": 50,
@@ -53,6 +56,7 @@ PLANS = {
 
 PREMIUM_PATH_PREFIXES = (
     "/api/ai/",
+    "/api/pro/",
     "/api/analysis/intelligence/",
     "/api/autotrade/",
 )

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     jwt_expire_hours: int = 72
 
     saas_enabled: bool = True
+    saas_default_plan: str = "pro"  # 新規登録時のプラン（free | pro | enterprise）
     stripe_webhook_secret: str = ""
 
     cors_origins: str = "http://localhost:3000"
