@@ -202,11 +202,77 @@ RSI: {technical['rsi']}""",
     }
 
 
+def _rule_based_trading_fallback(
+    symbol: str, technical: dict, news: dict, fund: dict, error: str | None = None
+) -> dict:
+    """OpenAI 失敗時のルールベース売買判断"""
+    price = technical.get("price") or 0
+    buy = technical.get("buy_signals", 0)
+    sell = technical.get("sell_signals", 0)
+    sentiment = news.get("sentiment", "neutral")
+    bias = fund.get("pair_bias", "neutral")
+
+    score = buy - sell
+    if sentiment == "bullish":
+        score += 1
+    elif sentiment == "bearish":
+        score -= 1
+    if bias == "bullish":
+        score += 1
+    elif bias == "bearish":
+        score -= 1
+
+    if score >= 2:
+        action = "buy"
+    elif score <= -2:
+        action = "sell"
+    else:
+        action = "hold"
+
+    atr = technical.get("volatility", {}).get("atr") or (price * 0.005 if price else 0.5)
+    if action == "buy":
+        tp, sl = price + atr * 2, price - atr
+    elif action == "sell":
+        tp, sl = price - atr * 2, price + atr
+    else:
+        tp, sl = price, price
+
+    warnings = ["OpenAI 応答不可 — ルールベースの参考判断です"]
+    if error:
+        warnings.append(error[:120])
+
+    return {
+        "symbol": symbol,
+        "current_price": price,
+        "technical": technical,
+        "news_sentiment": sentiment,
+        "action": action,
+        "confidence": min(75, 40 + abs(score) * 10),
+        "entry_price": price,
+        "take_profit": round(tp, 4),
+        "stop_loss": round(sl, 4),
+        "timeframe": "短期",
+        "reasoning": "テクニカルシグナル・ニュースセンチメント・ファンダバイアスを統合したルールベース判断（OpenAI フォールバック）。",
+        "technical_view": f"買いシグナル {buy} / 売りシグナル {sell}",
+        "fundamental_view": fund.get("overview", "—")[:200],
+        "news_view": news.get("summary", "—")[:200],
+        "risk_reward_ratio": 2.0,
+        "warnings": warnings,
+        "fallback": True,
+    }
+
+
 async def make_trading_decision(symbol: str, days: int = 200) -> dict:
     technical = _build_technical_context(symbol, days)
-    news = await analyze_news(symbol, limit=6)
-    fund = await analyze_fundamentals(symbol)
-    return await asyncio.to_thread(_trading_decision_from_context, symbol, technical, news, fund)
+    news, fund = await asyncio.gather(
+        analyze_news(symbol, limit=6),
+        analyze_fundamentals(symbol),
+    )
+    try:
+        return await asyncio.to_thread(_trading_decision_from_context, symbol, technical, news, fund)
+    except ValueError as e:
+        logger.warning("OpenAI trading decision failed, using rule fallback: %s", e)
+        return _rule_based_trading_fallback(symbol, technical, news, fund, str(e))
 
 
 async def assess_risk(symbol: str, days: int = 200, account_balance: float = 10000) -> dict:

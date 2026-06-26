@@ -710,6 +710,7 @@ const guideSections: readonly GuideSection[] = [
         items: [
           'データ取得に失敗 —「データ同期」を再実行。Yahoo Finance の一時障害の可能性',
           'AI分析に失敗 — OPENAI_API_KEY の設定・残高・レート制限を確認',
+          'AI 502/504 — OpenAI 応答が遅い場合あり · 再試行 · 総合レポートタブを推奨 · 再デプロイ後 /health 確認',
           '登録 500 エラー — Railway 再デプロイ · JWT_SECRET · DB 接続を確認',
           'AI Pro プラン制限 — 403 の場合 /settings でプラン確認',
           '自動取引 403 — Pro プラン以上が必要（/autotrade）',

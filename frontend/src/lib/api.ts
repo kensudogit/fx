@@ -20,7 +20,9 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
         detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
       }
     } catch {
-      // ignore parse error
+      if (res.status === 502) {
+        detail = "502 Bad Gateway";
+      }
     }
     if (SAAS_ENABLED && res.status === 401 && typeof window !== "undefined") {
       clearAuth();
@@ -32,6 +34,20 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
     }
     if (res.status === 429) {
       throw new Error(`${detail} — 本日の API 上限です。/settings からプランを確認してください。`);
+    }
+    if (res.status === 502) {
+      throw new Error(
+        detail === "502 Bad Gateway" || detail === "502"
+          ? "サーバーが応答しません（502）。AI分析は時間がかかることがあります。再試行するか、総合レポートタブをお試しください。"
+          : detail,
+      );
+    }
+    if (res.status === 504) {
+      throw new Error(
+        typeof detail === "string" && detail.length > 10
+          ? detail
+          : "AI分析がタイムアウトしました。しばらく待って再実行してください。",
+      );
     }
     throw new Error(detail);
   }

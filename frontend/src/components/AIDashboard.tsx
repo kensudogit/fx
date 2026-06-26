@@ -301,6 +301,11 @@ function TradingPanel({ data }: { data: AITradingDecision }) {
           ))}
         </div>
       )}
+      {"fallback" in data && (data as { fallback?: boolean }).fallback && (
+        <p className="hint" style={{ marginTop: "0.75rem" }}>
+          ※ OpenAI タイムアウト等のためルールベース参考値を表示しています。
+        </p>
+      )}
     </div>
   );
 }
