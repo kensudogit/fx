@@ -253,6 +253,24 @@ export async function getIntelligenceReport(
   return fetchAPI(`/api/analysis/intelligence/${symbol}?days=${days}`);
 }
 
+export async function getMarketAnalysis(
+  symbol: string,
+  days = 200
+): Promise<import("@/types").MarketAnalysis> {
+  return fetchAPI(`/api/analysis/market/${symbol}?days=${days}`);
+}
+
+export async function getRiskReport(
+  symbol: string,
+  accountBalance = 10000,
+  riskPercent = 1,
+  days = 200
+): Promise<import("@/types").RiskReport> {
+  return fetchAPI(
+    `/api/analysis/risk-report/${symbol}?account_balance=${accountBalance}&risk_percent=${riskPercent}&days=${days}`
+  );
+}
+
 export interface AuthSession {
   user: { id: number; email: string; role: string; tenant_id: number };
   tenant: {

@@ -86,12 +86,14 @@ const aiFeatured: FeaturedBlock = {
 
 const analysisFeatured: FeaturedBlock = {
   badge: 'Market Analysis',
-  title: 'マーケット分析（/analysis）— 5 カテゴリ統合',
+  title: 'マーケット分析（/analysis）— 相場環境・リスク管理',
   body:
-    'トレンド予測・ニュース・SNS・経済指標・ボラティリティをタブで切り替え。「総合」タブでは複合スコア（-100〜100）で方向感を一覧できます。',
+    'トレンド予測・ニュース・SNS・経済指標・ボラに加え、「相場環境」「リスク管理」タブでレジーム判定・S/R水準・相関・VaR・エントリー前チェックリストを確認できます。「総合」タブでは複合スコア（-100〜100）で方向感を一覧できます。',
   variant: 'analysis',
   items: [
     '総合 — 5分析の複合スコアと強気/弱気/中立の見通し',
+    '相場環境 — レジーム（トレンド/レンジ/高ボラ）· S/R水準 · モメンタム · MTF · 相関マトリクス',
+    'リスク管理 — Readiness（緑/黄/赤）· リスクスコア · VaR · チェックリスト · ポジションサイズ',
     'トレンド予測 — RandomForest + テクニカルルール + MTF',
     'ニュース — Google News RSS + ML / OpenAI センチメント',
     'SNS — Reddit 投稿のセンチメント・エンゲージメント',
@@ -197,7 +199,7 @@ const archDiagram = `Browser (FX Expert)
 Next.js :PORT (Railway)
     ├─ /              テクニカル分析
     ├─ /fundamental   経済指標カレンダー
-    ├─ /analysis      マーケット分析（5カテゴリ）
+    ├─ /analysis      マーケット分析（相場環境·リスク管理）
     ├─ /ai            OpenAI 統合分析
     ├─ /pro           AI Pro（差別化7機能）
     ├─ /dashboard     統合ダッシュボード
@@ -224,7 +226,7 @@ const guideSections: readonly GuideSection[] = [
           'PC — ヘッダーをドラッグで移動 · ▼▲ で開閉 · 位置はブラウザに自動保存',
           'スマホ — 右上 ≡ でメニュー · 本パネルは画面下部（初期は折りたたみ）',
           '画面上部ナビ — テクニカル / ファンダ / マーケット分析 / AI / AI Pro / ダッシュボード / 自動取引 / 料金 / 設定',
-          '推奨フロー — 登録 → テクニカル → 分析 → AI Pro → ダッシュボード → 自動取引',
+          '推奨フロー — 登録 → テクニカル → 分析（相場環境·リスク）→ AI Pro → ダッシュボード → 自動取引',
           'プレゼン時 — パネルを画面端に寄せ、メイン画面を広く使う',
         ],
       },
@@ -245,7 +247,7 @@ const guideSections: readonly GuideSection[] = [
         items: [
           '① /register でアカウント作成 → ログイン',
           '② テクニカル分析 — USDJPY · 200日 · データ同期',
-          '③ /analysis でマーケット分析「総合」タブを確認',
+          '③ /analysis —「相場環境」→「リスク管理」→「総合」タブを順に確認',
           '④ /pro で AIシグナル・市場ブリーフを実行',
           '⑤ /dashboard で TradingView + Backtrader を確認',
           '⑥ /settings で API キー発行（Webhook 連携用）',
@@ -313,6 +315,60 @@ const guideSections: readonly GuideSection[] = [
           '影響度「高」— 発表前後 30 分はスプレッド拡大・スリッページに注意',
           '複数イベント同日 — ボラティリティが重なる日はロット縮小を検討',
           'AI 分析前 — 直近の高影響イベントを把握してから統合レポートを実行',
+        ],
+      },
+    ],
+  },
+  {
+    label: 'マーケット分析 詳細',
+    steps: [
+      {
+        title: 'マーケット分析画面の基本操作（/analysis）',
+        body: '画面上部で通貨ペアを選び、タブで分析カテゴリを切り替えます。「再分析」で最新データを再取得します。',
+        items: [
+          '通貨ペア — USDJPY / EURUSD / GBPUSD / AUDUSD 等',
+          'タブ — 総合 · 相場環境 · リスク管理 · トレンド · ニュース · SNS · 経済 · ボラ',
+          '再分析 — 右上ボタンで選択中タブの API を再実行',
+          'スマホ — タブバーは横スクロール · 下部クイックドックからも遷移可',
+        ],
+      },
+      {
+        title: '相場環境タブの見方',
+        body: 'エントリー前に「今の相場がトレンドかレンジか」「どこに抵抗があるか」を確認するタブです。',
+        items: [
+          '相場レジーム — トレンド / レンジ / 高ボラ（ATR百分位 · BB幅 · MA乖離で判定）',
+          'モメンタム — RSI · MACD · ROC を統合したスコア（-100〜100）',
+          'S/R水準 — 直近スイング高安からサポート・レジスタンス · 最寄り水準までの pips',
+          'マルチTF — 日足と 4H の方向一致（MTF 整合）',
+          '相関マトリクス — 4通貨ペア間の相関（赤=高相関 → 同方向リスクに注意）',
+          '取引セッション — アジア / ロンドン / NY の流動性・ボラの目安',
+          'イベントリスク — 48時間以内の高影響イベント（FOMC · 雇用統計等）',
+        ],
+      },
+      {
+        title: 'リスク管理タブの見方',
+        body: '口座残高と 1 トレードリスク（%）を入力し、エントリー可否と推奨サイズを確認します。自動取引前の最終チェックに使います。',
+        items: [
+          '口座残高（$）· リスク（%）— 画面上部で変更（デフォルト $10,000 · 1%）',
+          'Readiness — 緑=条件良好 / 黄=注意・サイズ半減 / 赤=新規非推奨',
+          'リスクスコア — 0〜100（DD · ボラ · イベント · レジームを加味）',
+          'チェックリスト — MTF · イベント · DD · ボラ · リスク% · レジームの 6 項目',
+          '1日VaR（95%）— ヒストリカル法による 1 日最大損失の目安（USD）',
+          'シナリオ分析 — ATR ベースの上振れ / ベース / 下振れ（1日）',
+          'ストレステスト — 3連敗時の口座残高シミュレーション',
+          'ポジションサイズ — 推奨ロット · SL/TP 価格 · 最大損失 · 通貨別資金配分',
+        ],
+      },
+      {
+        title: '推奨フロー（エントリー前 3 分）',
+        body: 'テクニカルで方向性を見たあと、マーケット分析で相場環境とリスクを確認してからエントリーする流れを推奨します。',
+        items: [
+          '① / — テクニカルで通貨ペア · シグナル · チャートを確認',
+          '② /analysis「相場環境」— レジーム · S/R · イベントリスクを確認',
+          '③ /analysis「リスク管理」— Readiness が緑/黄か · 推奨ロットを確認',
+          '④ /analysis「総合」— 複合スコアで方向感の裏付けを取得',
+          '⑤ 黄/赤の場合 — ロット半減 or 待機 · イベント前後はスプレッド拡大に注意',
+          '⑥ /autotrade — 自動運用時も同じ口座残高・リスク% を設定に反映',
         ],
       },
     ],
@@ -623,6 +679,9 @@ const guideSections: readonly GuideSection[] = [
           'GET /api/symbols — 利用可能通貨ペア一覧',
           'POST /api/data/sync/{symbol}?days=200 — 市場データ同期',
           'GET /api/analysis/intelligence/{symbol} — 5大分析統合',
+          'GET /api/analysis/market/{symbol} — 相場深度（レジーム·S/R·相関）',
+          'GET /api/analysis/risk-report/{symbol}?account_balance=10000&risk_percent=1 — 統合リスクレポート',
+          'GET /api/pro/risk/{symbol} — AI Pro 高度リスク管理（/pro タブ）',
           'GET /api/pro/signals/{symbol} — AI 売買シグナル',
           'GET /api/pro/market-brief/{symbol} — 市場ブリーフ',
           'POST /api/pro/chat — AI 投資相談チャット',
@@ -658,7 +717,7 @@ const guideSections: readonly GuideSection[] = [
         items: [
           '0–2分: 本パネルでアーキテクチャ・SaaS・サービストポロジを説明',
           '2–5分: テクニカル — USDJPY·200日·データ同期·シグナル',
-          '5–7分: /analysis — 5カテゴリ分析と総合スコア',
+          '5–7分: /analysis — 相場環境 · リスク管理（Readiness）· 総合スコア',
           '7–11分: /pro — AIシグナル・市場ブリーフ・ウォークフォワード',
           '11–13分: /dashboard — TradingView + OANDA + Backtrader',
           '13–14分: /autotrade — プリセット · シミュレーション · SL/TP · ドライラン',

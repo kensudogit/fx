@@ -487,10 +487,98 @@ export interface AdvancedRisk {
   drawdown: { max_drawdown_pct: number; current_drawdown_pct: number };
   position_sizing: PositionSizeResult;
   stop_loss: { price: number; pips: number; max_loss_usd: number };
-  take_profit: { price: number; risk_reward: number };
+  take_profit: { price: number; pips: number; risk_reward: number };
   capital_allocation: { method: string; pairs: Array<{ symbol: string; weight_pct: number; allocated_usd: number }> };
   risk_budget: { per_trade_usd: number; max_concurrent_exposure_usd: number; max_open_positions_suggested: number };
   recommendations: string[];
+}
+
+export interface MarketAnalysis {
+  symbol: string;
+  source: string;
+  days: number;
+  regime: {
+    regime: string;
+    label: string;
+    strength: number;
+    trend_bias: string;
+    trend_label: string;
+    atr_percentile: number;
+    bb_width_pct: number;
+    ma_spread_pct: number;
+    slope_20d_pct: number;
+  };
+  key_levels: {
+    current_price: number;
+    supports: number[];
+    resistances: number[];
+    nearest_support: number | null;
+    nearest_resistance: number | null;
+    distance_to_support_pips: number | null;
+    distance_to_resistance_pips: number | null;
+  };
+  momentum: {
+    score: number;
+    bias: string;
+    label: string;
+    rsi: number;
+    macd_histogram: number;
+    roc_5d_pct: number;
+    roc_20d_pct: number;
+  };
+  multi_timeframe: {
+    alignment: string;
+    alignment_label: string;
+    timeframes: Record<string, { trend: string; label: string; close: number; rsi: number | null }>;
+  };
+  correlation: {
+    pairs: string[];
+    matrix: Record<string, Record<string, number>>;
+    days: number;
+    observations: number;
+  };
+  session: { session: string; label: string; note: string };
+  event_risk: {
+    level: string;
+    label: string;
+    within_hours: number;
+    alerts: Array<{ date: string; title: string; hours_until: number; impact: string }>;
+  };
+}
+
+export interface RiskChecklistItem {
+  item: string;
+  status: "pass" | "warn" | "fail";
+  detail: string;
+}
+
+export interface RiskReport extends AdvancedRisk {
+  value_at_risk: {
+    confidence: number;
+    daily_var_pct: number;
+    daily_var_usd: number;
+    observations: number;
+  };
+  scenarios: {
+    horizon: string;
+    bull: { price: number; change_pips: number; label: string };
+    base: { price: number; change_pips: number; label: string };
+    bear: { price: number; change_pips: number; label: string };
+  };
+  stress_test: {
+    consecutive_losses: number;
+    loss_per_trade_usd: number;
+    total_loss_usd: number;
+    remaining_balance_usd: number;
+    remaining_pct: number;
+    interpretation: string;
+  };
+  risk_score: { score: number; level: string; label: string };
+  event_risk: MarketAnalysis["event_risk"];
+  market_regime: MarketAnalysis["regime"];
+  checklist: RiskChecklistItem[];
+  trade_readiness: "green" | "yellow" | "red";
+  trade_readiness_label: string;
 }
 
 export interface PortfolioOverview {

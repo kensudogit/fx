@@ -9,6 +9,8 @@ import {
   getSNSAnalysis,
   getEconomicAnalysis,
   getVolatilityPrediction,
+  getMarketAnalysis,
+  getRiskReport,
 } from "@/lib/api";
 import type {
   IntelligenceReport,
@@ -17,9 +19,19 @@ import type {
   SNSAnalysis,
   EconomicAnalysis,
   VolatilityPrediction,
+  MarketAnalysis,
+  RiskReport,
 } from "@/types";
 
-type AnalysisTab = "overview" | "trend" | "news" | "sns" | "economic" | "volatility";
+type AnalysisTab =
+  | "overview"
+  | "market"
+  | "risk"
+  | "trend"
+  | "news"
+  | "sns"
+  | "economic"
+  | "volatility";
 
 const SENTIMENT: Record<string, string> = {
   bullish: "強気",
@@ -33,9 +45,24 @@ const IMPACT: Record<string, string> = {
   neutral: "中立",
 };
 
+const REGIME_LABEL: Record<string, string> = {
+  trending: "トレンド",
+  ranging: "レンジ",
+  volatile: "高ボラ",
+};
+
 function BiasBadge({ value }: { value: string }) {
   const cls = value === "bullish" ? "badge-buy" : value === "bearish" ? "badge-sell" : "badge-neutral";
   return <span className={`badge ${cls}`}>{SENTIMENT[value] ?? value}</span>;
+}
+
+function ReadinessBadge({ level, label }: { level: string; label: string }) {
+  return (
+    <div className={`readiness-banner readiness-${level}`}>
+      <span className="readiness-dot" />
+      {label}
+    </div>
+  );
 }
 
 export default function AnalysisDashboard() {
@@ -44,8 +71,12 @@ export default function AnalysisDashboard() {
   const [tab, setTab] = useState<AnalysisTab>("overview");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountBalance, setAccountBalance] = useState(10000);
+  const [riskPercent, setRiskPercent] = useState(1);
 
   const [report, setReport] = useState<IntelligenceReport | null>(null);
+  const [market, setMarket] = useState<MarketAnalysis | null>(null);
+  const [riskReport, setRiskReport] = useState<RiskReport | null>(null);
   const [trend, setTrend] = useState<TrendPrediction | null>(null);
   const [news, setNews] = useState<NewsAnalysisResult | null>(null);
   const [sns, setSns] = useState<SNSAnalysis | null>(null);
@@ -62,6 +93,10 @@ export default function AnalysisDashboard() {
     try {
       if (tab === "overview") {
         setReport(await getIntelligenceReport(symbol));
+      } else if (tab === "market") {
+        setMarket(await getMarketAnalysis(symbol));
+      } else if (tab === "risk") {
+        setRiskReport(await getRiskReport(symbol, accountBalance, riskPercent));
       } else if (tab === "trend") {
         setTrend(await getTrendPrediction(symbol));
       } else if (tab === "news") {
@@ -78,7 +113,7 @@ export default function AnalysisDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [symbol, tab]);
+  }, [symbol, tab, accountBalance, riskPercent]);
 
   useEffect(() => {
     load();
@@ -86,12 +121,17 @@ export default function AnalysisDashboard() {
 
   const tabs: { key: AnalysisTab; label: string }[] = [
     { key: "overview", label: "総合" },
+    { key: "market", label: "相場環境" },
+    { key: "risk", label: "リスク管理" },
     { key: "trend", label: "トレンド予測" },
     { key: "news", label: "ニュース分析" },
     { key: "sns", label: "SNS分析" },
     { key: "economic", label: "経済指標" },
     { key: "volatility", label: "ボラ予測" },
   ];
+
+  const hasData =
+    report || market || riskReport || trend || news || sns || economic || volatility;
 
   return (
     <>
@@ -107,13 +147,38 @@ export default function AnalysisDashboard() {
               ))}
             </select>
           </div>
+          {tab === "risk" && (
+            <>
+              <label className="inline-field">
+                口座 $
+                <input
+                  type="number"
+                  min={100}
+                  step={1000}
+                  value={accountBalance}
+                  onChange={(e) => setAccountBalance(Number(e.target.value))}
+                />
+              </label>
+              <label className="inline-field">
+                リスク %
+                <input
+                  type="number"
+                  min={0.1}
+                  max={10}
+                  step={0.1}
+                  value={riskPercent}
+                  onChange={(e) => setRiskPercent(Number(e.target.value))}
+                />
+              </label>
+            </>
+          )}
           <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
             {loading ? "分析中..." : "再分析"}
           </button>
         </div>
       </div>
 
-      <div className="tab-bar">
+      <div className="tab-bar tab-bar-scroll">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -127,9 +192,7 @@ export default function AnalysisDashboard() {
       </div>
 
       {error && <div className="error-banner">{error}</div>}
-      {loading && !report && !trend && !news && !sns && !economic && !volatility && (
-        <div className="loading">分析を実行中...</div>
-      )}
+      {loading && !hasData && <div className="loading">分析を実行中...</div>}
 
       {tab === "overview" && report && (
         <div className="analysis-overview">
@@ -163,6 +226,246 @@ export default function AnalysisDashboard() {
               bias={report.volatility.forecast.regime === "high" ? "bearish" : "neutral"}
               detail={report.volatility.interpretation}
             />
+          </div>
+        </div>
+      )}
+
+      {tab === "market" && market && (
+        <div className="market-analysis">
+          <div className="grid-2">
+            <div className="card">
+              <h2>
+                相場レジーム — {market.symbol}{" "}
+                <span className="badge badge-neutral">{REGIME_LABEL[market.regime.regime] ?? market.regime.regime}</span>
+              </h2>
+              <p>{market.regime.label}（強度 {market.regime.strength}/100）</p>
+              <div className="stat-grid">
+                <Stat label="トレンド方向" value={market.regime.trend_label} />
+                <Stat label="ATR百分位" value={`${market.regime.atr_percentile}%`} />
+                <Stat label="BB幅" value={`${market.regime.bb_width_pct}%`} />
+                <Stat label="MA乖離" value={`${market.regime.ma_spread_pct}%`} />
+                <Stat label="20日傾き" value={`${market.regime.slope_20d_pct}%`} />
+              </div>
+            </div>
+            <div className="card">
+              <h2>
+                モメンタム <BiasBadge value={market.momentum.bias} />
+              </h2>
+              <p>{market.momentum.label}（スコア {market.momentum.score}）</p>
+              <div className="stat-grid">
+                <Stat label="RSI" value={String(market.momentum.rsi)} />
+                <Stat label="MACD Hist" value={String(market.momentum.macd_histogram)} />
+                <Stat label="5日ROC" value={`${market.momentum.roc_5d_pct}%`} />
+                <Stat label="20日ROC" value={`${market.momentum.roc_20d_pct}%`} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid-2">
+            <div className="card">
+              <h2>サポート / レジスタンス</h2>
+              <div className="stat-grid">
+                <Stat label="現在価格" value={String(market.key_levels.current_price)} />
+                <Stat
+                  label="最寄サポート"
+                  value={
+                    market.key_levels.nearest_support != null
+                      ? `${market.key_levels.nearest_support} (${market.key_levels.distance_to_support_pips ?? "—"} pips)`
+                      : "—"
+                  }
+                />
+                <Stat
+                  label="最寄レジスタンス"
+                  value={
+                    market.key_levels.nearest_resistance != null
+                      ? `${market.key_levels.nearest_resistance} (${market.key_levels.distance_to_resistance_pips ?? "—"} pips)`
+                      : "—"
+                  }
+                />
+              </div>
+              <div className="level-lists">
+                <div>
+                  <h3>サポート</h3>
+                  <ul className="headline-list">
+                    {market.key_levels.supports.length > 0 ? (
+                      market.key_levels.supports.map((lv) => <li key={lv}>{lv}</li>)
+                    ) : (
+                      <li>—</li>
+                    )}
+                  </ul>
+                </div>
+                <div>
+                  <h3>レジスタンス</h3>
+                  <ul className="headline-list">
+                    {market.key_levels.resistances.length > 0 ? (
+                      market.key_levels.resistances.map((lv) => <li key={lv}>{lv}</li>)
+                    ) : (
+                      <li>—</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <h2>マルチタイムフレーム</h2>
+              <p>{market.multi_timeframe.alignment_label}</p>
+              <div className="stat-grid">
+                <Stat label="日足" value={market.multi_timeframe.timeframes["1d"]?.label ?? "—"} />
+                <Stat label="4H" value={market.multi_timeframe.timeframes["4h"]?.label ?? "—"} />
+                <Stat label="日足RSI" value={String(market.multi_timeframe.timeframes["1d"]?.rsi ?? "—")} />
+                <Stat label="4H RSI" value={String(market.multi_timeframe.timeframes["4h"]?.rsi ?? "—")} />
+              </div>
+              <h3 style={{ marginTop: "1rem" }}>取引セッション</h3>
+              <p>
+                {market.session.label} — {market.session.note}
+              </p>
+              <h3 style={{ marginTop: "1rem" }}>イベントリスク</h3>
+              <p>{market.event_risk.label}</p>
+              {market.event_risk.alerts.length > 0 && (
+                <ul className="headline-list">
+                  {market.event_risk.alerts.map((a, i) => (
+                    <li key={i}>
+                      {a.date} — {a.title}（あと {a.hours_until}h）
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>通貨ペア相関（{market.correlation.days}日）</h2>
+            <p className="hint">観測数: {market.correlation.observations} — 高相関ペアは同方向リスクに注意</p>
+            <div className="correlation-wrap">
+              <table className="data-table correlation-table">
+                <thead>
+                  <tr>
+                    <th />
+                    {market.correlation.pairs.map((p) => (
+                      <th key={p}>{p}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {market.correlation.pairs.map((row) => (
+                    <tr key={row}>
+                      <th>{row}</th>
+                      {market.correlation.pairs.map((col) => {
+                        const v = market.correlation.matrix[row]?.[col] ?? 0;
+                        const cls =
+                          row === col ? "corr-self" : Math.abs(v) >= 0.7 ? "corr-high" : Math.abs(v) >= 0.4 ? "corr-mid" : "";
+                        return (
+                          <td key={col} className={cls}>
+                            {row === col ? "—" : v.toFixed(2)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "risk" && riskReport && (
+        <div className="risk-analysis">
+          <ReadinessBadge level={riskReport.trade_readiness} label={riskReport.trade_readiness_label} />
+
+          <div className="grid-2">
+            <div className="card">
+              <h2>リスクスコア</h2>
+              <div className="risk-score-display" data-level={riskReport.risk_score.level}>
+                {riskReport.risk_score.score}
+                <span>/100</span>
+              </div>
+              <p>{riskReport.risk_score.label}</p>
+              <div className="stat-grid">
+                <Stat label="1日VaR (95%)" value={`$${riskReport.value_at_risk.daily_var_usd}`} />
+                <Stat label="VaR%" value={`${riskReport.value_at_risk.daily_var_pct}%`} />
+                <Stat label="最大DD" value={`${riskReport.drawdown.max_drawdown_pct}%`} />
+                <Stat label="現在DD" value={`${riskReport.drawdown.current_drawdown_pct}%`} />
+              </div>
+            </div>
+            <div className="card">
+              <h2>エントリー前チェックリスト</h2>
+              <ul className="checklist">
+                {riskReport.checklist.map((c) => (
+                  <li key={c.item} className={`checklist-item checklist-${c.status}`}>
+                    <span className="checklist-icon" aria-hidden />
+                    <div>
+                      <strong>{c.item}</strong>
+                      <p className="hint">{c.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="grid-2">
+            <div className="card">
+              <h2>ポジションサイズ</h2>
+              <div className="stat-grid">
+                <Stat label="推奨ロット" value={String(riskReport.position_sizing.recommended_lots)} />
+                <Stat label="ストップ" value={`${riskReport.stop_loss.pips} pips`} />
+                <Stat label="最大損失" value={`$${riskReport.stop_loss.max_loss_usd}`} />
+                <Stat label="利確(RR2)" value={`${riskReport.take_profit.pips} pips`} />
+                <Stat label="SL価格" value={String(riskReport.stop_loss.price)} />
+                <Stat label="TP価格" value={String(riskReport.take_profit.price)} />
+              </div>
+            </div>
+            <div className="card">
+              <h2>シナリオ分析（ATRベース）</h2>
+              <p className="hint">{riskReport.scenarios.horizon}</p>
+              <div className="stat-grid">
+                <Stat label="上振れ" value={`${riskReport.scenarios.bull.price} (+${riskReport.scenarios.bull.change_pips} pips)`} />
+                <Stat label="ベース" value={String(riskReport.scenarios.base.price)} />
+                <Stat label="下振れ" value={`${riskReport.scenarios.bear.price} (${riskReport.scenarios.bear.change_pips} pips)`} />
+              </div>
+              <h3 style={{ marginTop: "1rem" }}>ストレステスト（3連敗）</h3>
+              <p>{riskReport.stress_test.interpretation}</p>
+              <div className="stat-grid">
+                <Stat label="連敗損失合計" value={`$${riskReport.stress_test.total_loss_usd}`} />
+                <Stat label="残高" value={`$${riskReport.stress_test.remaining_balance_usd} (${riskReport.stress_test.remaining_pct}%)`} />
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>リスク予算・資金配分</h2>
+            <div className="stat-grid">
+              <Stat label="1トレード上限" value={`$${riskReport.risk_budget.per_trade_usd}`} />
+              <Stat
+                label="同時保有上限"
+                value={`$${riskReport.risk_budget.max_concurrent_exposure_usd} / 最大${riskReport.risk_budget.max_open_positions_suggested}ポジ`}
+              />
+            </div>
+            <table className="data-table" style={{ marginTop: "1rem" }}>
+              <thead>
+                <tr>
+                  <th>ペア</th>
+                  <th>配分%</th>
+                  <th>配分USD</th>
+                </tr>
+              </thead>
+              <tbody>
+                {riskReport.capital_allocation.pairs.map((p) => (
+                  <tr key={p.symbol}>
+                    <td>{p.symbol}</td>
+                    <td>{p.weight_pct}%</td>
+                    <td>${p.allocated_usd}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <h3 style={{ marginTop: "1rem" }}>推奨アクション</h3>
+            <ul className="headline-list">
+              {riskReport.recommendations.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
           </div>
         </div>
       )}

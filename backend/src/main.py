@@ -36,6 +36,8 @@ from src.api.broker import router as broker_router
 from src.api.dashboard import build_dashboard
 from src.api.prices import router as prices_router
 from src.autotrade.scheduler import start_scheduler
+from src.analysis.market_deep import build_market_analysis
+from src.analysis.risk_advanced import build_risk_report
 from src.api.intelligence import build_intelligence
 from src.analysis.economic import analyze_economic
 from src.analysis.sns import analyze_sns
@@ -595,5 +597,28 @@ async def analysis_intelligence(symbol: str, days: int = Query(default=200, ge=6
     symbol = _validate_symbol(symbol)
     try:
         return await build_intelligence(symbol, days)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/analysis/market/{symbol}")
+async def analysis_market(symbol: str, days: int = Query(default=200, ge=60, le=500)):
+    symbol = _validate_symbol(symbol)
+    try:
+        return build_market_analysis(symbol, days)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/analysis/risk-report/{symbol}")
+async def analysis_risk_report(
+    symbol: str,
+    account_balance: float = Query(default=10000, ge=100),
+    risk_percent: float = Query(default=1.0, ge=0.1, le=10),
+    days: int = Query(default=200, ge=60, le=500),
+):
+    symbol = _validate_symbol(symbol)
+    try:
+        return build_risk_report(symbol, account_balance, risk_percent, days)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
