@@ -30,6 +30,9 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
     if (res.status === 403) {
       throw new Error(`${detail} — /pricing でプランを確認してください。`);
     }
+    if (res.status === 429) {
+      throw new Error(`${detail} — 本日の API 上限です。/settings からプランを確認してください。`);
+    }
     throw new Error(detail);
   }
   return res.json();
@@ -252,9 +255,22 @@ export async function getIntelligenceReport(
 
 export interface AuthSession {
   user: { id: number; email: string; role: string; tenant_id: number };
-  tenant: { id: number; name: string; slug: string; plan: string };
-  usage: { daily_calls: number; daily_limit: number; remaining: number };
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+    plan: string;
+    has_stripe_subscription?: boolean;
+  };
+  usage: {
+    daily_calls: number;
+    daily_limit: number;
+    remaining: number;
+    usage_percent?: number;
+    usage_level?: "ok" | "warning" | "critical" | "exhausted";
+  };
   features: Record<string, boolean | number>;
+  billing?: { stripe_customer: boolean; stripe_subscription: boolean };
 }
 
 export interface BillingPlan {
@@ -306,6 +322,26 @@ export async function createBillingCheckout(plan: string): Promise<{ checkout_ur
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ plan }),
   });
+}
+
+export async function createBillingPortal(): Promise<{ portal_url: string }> {
+  return fetchAPI("/api/billing/portal", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+}
+
+export async function getBillingStatus(): Promise<{
+  plan: string;
+  plan_name: string;
+  price_monthly_usd: number;
+  daily_api_limit: number;
+  stripe_enabled: boolean;
+  has_active_subscription: boolean;
+  usage: { daily_calls: number; daily_limit: number; remaining: number; usage_percent: number };
+}> {
+  return fetchAPI("/api/billing/status");
 }
 
 export async function getOandaSettings(): Promise<{

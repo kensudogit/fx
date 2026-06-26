@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, select
 
+from src.auth.secrets import decrypt_secret, encrypt_secret
 from src.config import settings
 from src.db.database import Base, SessionLocal, engine
 
@@ -95,7 +96,7 @@ def save_tenant_oanda_settings(
         if clear_token:
             row.api_token = None
         elif api_token is not None and api_token.strip():
-            row.api_token = api_token.strip()
+            row.api_token = encrypt_secret(api_token.strip())
 
         row.updated_at = now
         db.commit()
@@ -125,13 +126,22 @@ def resolve_oanda_credentials(tenant_id: int | None, trading_mode: str = "paper"
         try:
             row = db.get(TenantOandaSettings, tenant_id)
             if row and row.api_token and row.account_id:
+                token = decrypt_secret(row.api_token)
+                if not token:
+                    return OandaCredentials(
+                        configured=False,
+                        mode="paper",
+                        api_token=None,
+                        account_id=None,
+                        source="paper",
+                    )
                 env = row.environment or "practice"
                 if mode == "live" and env != "live":
                     env = "practice"
                 return OandaCredentials(
                     configured=True,
                     mode=env,
-                    api_token=row.api_token,
+                    api_token=token,
                     account_id=row.account_id,
                     source="tenant",
                 )

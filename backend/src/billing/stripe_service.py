@@ -141,3 +141,36 @@ def _on_subscription_deleted(db: Session, sub: dict) -> dict:
     db.commit()
     logger.info("Stripe subscription deleted tenant=%s -> free", tenant_id)
     return {"handled": True, "tenant_id": tenant_id, "plan": "free"}
+
+
+def create_portal_session(tenant: Tenant, return_url: str) -> str:
+    if not stripe_configured():
+        raise ValueError("STRIPE_SECRET_KEY が未設定です")
+    if not tenant.stripe_customer_id:
+        raise ValueError("Stripe 顧客 ID がありません。先に有料プランを申し込んでください")
+
+    stripe.api_key = settings.stripe_secret_key
+    session = stripe.billing_portal.Session.create(
+        customer=tenant.stripe_customer_id,
+        return_url=return_url,
+    )
+    if not session.url:
+        raise ValueError("ポータル URL の生成に失敗しました")
+    return session.url
+
+
+def billing_status(tenant: Tenant) -> dict:
+    from src.auth.plans import PLANS, daily_limit
+
+    plan = tenant.plan if tenant.plan in PLANS else "free"
+    info = PLANS[plan]
+    return {
+        "plan": plan,
+        "plan_name": info["name"],
+        "price_monthly_usd": info["price_monthly_usd"],
+        "daily_api_limit": daily_limit(plan),
+        "stripe_customer_id": tenant.stripe_customer_id,
+        "stripe_subscription_id": tenant.stripe_subscription_id,
+        "has_active_subscription": bool(tenant.stripe_subscription_id),
+        "stripe_enabled": stripe_configured(),
+    }

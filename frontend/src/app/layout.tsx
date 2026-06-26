@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { UsageGuidePanel } from "@/components/UsageGuidePanel";
+import { UsageBanner } from "@/components/UsageBanner";
+import { MobileQuickDock } from "@/components/MobileQuickDock";
 import { AuthProvider } from "@/context/AuthContext";
 import { NavBar } from "@/components/NavBar";
 
@@ -36,9 +38,11 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <NavBar />
+          <UsageBanner />
           <main>
             <div className="container">{children}</div>
           </main>
+          <MobileQuickDock />
           <UsageGuidePanel />
         </AuthProvider>
       </body>

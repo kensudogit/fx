@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     jwt_expire_hours: int = 72
 
     saas_enabled: bool = True
-    saas_default_plan: str = "pro"  # 新規登録時のプラン（free | pro | enterprise）
+    saas_default_plan: str = "free"  # 新規登録時のプラン（free | pro | enterprise）
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_pro: str = ""

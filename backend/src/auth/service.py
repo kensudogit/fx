@@ -100,15 +100,31 @@ def get_me(db: Session, user_id: int) -> dict:
     tenant = db.get(Tenant, user.tenant_id)
     usage = count_daily_usage(tenant.id)
     limit = daily_limit(tenant.plan)
+    remaining = max(0, limit - usage)
+    pct = round((usage / limit) * 100, 1) if limit else 0
+    if remaining <= 0:
+        usage_level = "exhausted"
+    elif pct >= 90:
+        usage_level = "critical"
+    elif pct >= 75:
+        usage_level = "warning"
+    else:
+        usage_level = "ok"
     return {
         "user": _user_payload(user),
         "tenant": _tenant_payload(tenant),
         "usage": {
             "daily_calls": usage,
             "daily_limit": limit,
-            "remaining": max(0, limit - usage),
+            "remaining": remaining,
+            "usage_percent": pct,
+            "usage_level": usage_level,
         },
         "features": plan_features(tenant.plan),
+        "billing": {
+            "stripe_customer": bool(tenant.stripe_customer_id),
+            "stripe_subscription": bool(tenant.stripe_subscription_id),
+        },
     }
 
 

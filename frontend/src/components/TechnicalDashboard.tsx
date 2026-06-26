@@ -167,8 +167,8 @@ export default function TechnicalDashboard() {
 
           <MultiTimeframePanel symbol={symbol} />
 
-          <div className="grid-2">
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
+          <div className="grid-2 mobile-dashboard">
+            <div className="card mobile-chart-block" style={{ gridColumn: "1 / -1" }}>
               <div className="tabs">
                 {tabs.map((tab) => (
                   <button
@@ -189,9 +189,15 @@ export default function TechnicalDashboard() {
               {activeTab === "stochastic" && <OscillatorChart data={data} type="stochastic" />}
             </div>
 
-            <SignalPanel signals={signals} price={price} symbol={symbol} />
-            <PositionSizePanel symbol={symbol} price={price} days={days} />
-            <BacktestPanel symbol={symbol} days={days} />
+            <div className="mobile-signals-first">
+              <SignalPanel signals={signals} price={price} symbol={symbol} />
+            </div>
+            <div className="mobile-extra-panel">
+              <PositionSizePanel symbol={symbol} price={price} days={days} />
+            </div>
+            <div className="mobile-extra-panel">
+              <BacktestPanel symbol={symbol} days={days} />
+            </div>
           </div>
         </>
       )}

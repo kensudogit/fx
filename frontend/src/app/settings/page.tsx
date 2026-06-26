@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   createApiKey,
   createBillingCheckout,
+  createBillingPortal,
   getBillingPlans,
   getOandaSettings,
   listApiKeys,
@@ -58,6 +59,20 @@ export default function SettingsPage() {
       refresh();
     }
   }, [refresh]);
+
+  const handlePortal = async () => {
+    setError(null);
+    try {
+      const { portal_url } = await createBillingPortal();
+      window.location.href = portal_url;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "請求ポータルを開けません");
+    }
+  };
+
+  const usagePct =
+    session?.usage.usage_percent ??
+    (session ? Math.round((session.usage.daily_calls / session.usage.daily_limit) * 100) : 0);
 
   const handleUpgrade = async (plan: string) => {
     setError(null);
@@ -126,7 +141,20 @@ export default function SettingsPage() {
           </p>
           <p>
             プラン: <span className="badge badge-neutral">{session.tenant.plan.toUpperCase()}</span>
+            {session.billing?.stripe_subscription && (
+              <span className="badge badge-buy" style={{ marginLeft: "0.5rem" }}>
+                Stripe契約中
+              </span>
+            )}
           </p>
+          <div className="usage-meter">
+            <div className="usage-meter-label">
+              本日の API 利用 ({usagePct}%)
+            </div>
+            <div className="usage-bar">
+              <div className="usage-bar-fill" style={{ width: `${Math.min(100, usagePct)}%` }} />
+            </div>
+          </div>
           <div className="stat-grid">
             <div className="stat-item">
               <div className="label">本日のAPI利用</div>
@@ -140,6 +168,11 @@ export default function SettingsPage() {
             </div>
           </div>
           <p className="hint">ログイン: {session.user.email}</p>
+          {stripeEnabled && session.billing?.stripe_customer && (
+            <button type="button" className="btn-secondary" onClick={handlePortal}>
+              Stripe 請求ポータル
+            </button>
+          )}
         </div>
 
         <div className="card">

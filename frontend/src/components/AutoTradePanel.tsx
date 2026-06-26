@@ -658,7 +658,25 @@ export default function AutoTradePanel() {
         {runs.length === 0 ? (
           <p className="hint">実行ログはまだありません。ドライラン評価または自動取引を有効化してください。</p>
         ) : (
-          <table className="data-table">
+          <>
+            <div className="mobile-only run-log-cards">
+              {runs.map((r: AutoTradeRun) => (
+                <article key={r.id ?? `${r.symbol}-${r.created_at}`} className="run-log-card">
+                  <div className="run-log-card-head">
+                    <strong>{r.symbol}</strong>
+                    <span className={decisionClass(r.decision)}>{decisionLabel(r.decision)}</span>
+                  </div>
+                  <p>
+                    {r.action} · {r.confidence ?? "—"}% · {r.units ?? "—"} units
+                  </p>
+                  <p className="hint">{r.reason}</p>
+                  <p className="hint">
+                    {r.created_at ? new Date(r.created_at).toLocaleString("ja-JP") : "—"} · {r.trigger}
+                  </p>
+                </article>
+              ))}
+            </div>
+            <table className="data-table desktop-only">
             <thead>
               <tr>
                 <th>時刻</th>
@@ -688,6 +706,7 @@ export default function AutoTradePanel() {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </>

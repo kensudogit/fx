@@ -16,7 +16,13 @@ from src.auth.service import (
     register_tenant,
     upgrade_plan,
 )
-from src.billing.stripe_service import create_checkout_session, handle_stripe_webhook, stripe_configured
+from src.billing.stripe_service import (
+    billing_status,
+    create_checkout_session,
+    create_portal_session,
+    handle_stripe_webhook,
+    stripe_configured,
+)
 from src.config import settings
 from src.db.database import get_db
 
@@ -48,6 +54,10 @@ class CheckoutBody(BaseModel):
     plan: str = Field(pattern="^(pro|enterprise)$")
     success_url: str | None = None
     cancel_url: str | None = None
+
+
+class PortalBody(BaseModel):
+    return_url: str | None = None
 
 
 def _current_user_id(request: Request) -> int:
@@ -135,6 +145,43 @@ def billing_plans():
         "saas_enabled": settings.saas_enabled,
         "stripe_enabled": stripe_configured(),
     }
+
+
+@router.get("/api/billing/status")
+def billing_status_route(request: Request, db: Session = Depends(get_db)):
+    tenant_id = _current_tenant_id(request)
+    tenant = db.get(Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    from src.auth.models import count_daily_usage
+    from src.auth.plans import daily_limit
+
+    usage = count_daily_usage(tenant_id)
+    limit = daily_limit(tenant.plan)
+    status = billing_status(tenant)
+    status["usage"] = {
+        "daily_calls": usage,
+        "daily_limit": limit,
+        "remaining": max(0, limit - usage),
+        "usage_percent": round((usage / limit) * 100, 1) if limit else 0,
+    }
+    return status
+
+
+@router.post("/api/billing/portal")
+def billing_portal(body: PortalBody, request: Request, db: Session = Depends(get_db)):
+    _require_owner(request)
+    tenant_id = _current_tenant_id(request)
+    tenant = db.get(Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    base = settings.app_public_url.rstrip("/")
+    return_url = body.return_url or f"{base}/settings"
+    try:
+        url = create_portal_session(tenant, return_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"portal_url": url}
 
 
 @router.post("/api/billing/checkout")
