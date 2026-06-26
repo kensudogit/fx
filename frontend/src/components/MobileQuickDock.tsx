@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 const DOCK_LINKS = [
   { href: "/", label: "分析", short: "FX" },
   { href: "/analysis", label: "総合", short: "5" },
+  { href: "/autotrade", label: "自動", short: "⚡" },
   { href: "/ai", label: "AI", short: "AI" },
-  { href: "/dashboard", label: "板", short: "板" },
   { href: "/settings", label: "設定", short: "⚙" },
 ] as const;
 

@@ -70,6 +70,9 @@ def _impact_on_pair(indicator_key: str, impact: str, base: str, quote: str) -> s
 
 
 async def analyze_economic(symbol: str) -> dict:
+    from src.analysis.fundamental import refresh_economic_calendar
+
+    await refresh_economic_calendar()
     base, quote = CURRENCY_MAP.get(symbol.upper(), (symbol[:3], symbol[3:]))
     fund_data = await get_fundamental_data()
     upcoming = get_upcoming_events()[:8]

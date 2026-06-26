@@ -2056,3 +2056,29 @@ main {
     width: 4.5rem;
   }
 }
+
+/* ── 自動取引モバイル ── */
+.autotrade-mobile-summary {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.autotrade-mobile-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.autotrade-mobile-summary .order-controls {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.autotrade-mobile-summary .order-controls button {
+  flex: 1;
+}

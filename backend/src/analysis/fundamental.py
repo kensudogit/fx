@@ -1,10 +1,17 @@
 from datetime import date, datetime, timedelta
 from enum import Enum
+import logging
 
 import httpx
 import pandas as pd
 
 from src.config import settings
+
+logger = logging.getLogger(__name__)
+
+_calendar_cache: list[dict] | None = None
+_calendar_source: str = "template"
+_calendar_fetched_at: datetime | None = None
 
 
 class EventType(str, Enum):
@@ -127,6 +134,89 @@ async def get_fundamental_data(event_type: EventType | None = None) -> dict:
 
 
 def get_upcoming_events() -> list[dict]:
+    """今後の経済イベント（キャッシュ or テンプレート）"""
+    if _calendar_cache:
+        return _calendar_cache
+    return _template_events()
+
+
+def get_calendar_source() -> str:
+    return _calendar_source
+
+
+async def refresh_economic_calendar(force: bool = False) -> list[dict]:
+    """Finnhub から経済カレンダーを取得（APIキー未設定時はテンプレート）"""
+    global _calendar_cache, _calendar_source, _calendar_fetched_at
+
+    now = datetime.now()
+    if (
+        not force
+        and _calendar_cache
+        and _calendar_fetched_at
+        and (now - _calendar_fetched_at).total_seconds() < 3600
+    ):
+        return _calendar_cache
+
+    if settings.finnhub_api_key:
+        try:
+            events = await _fetch_finnhub_calendar()
+            if events:
+                _calendar_cache = events
+                _calendar_source = "finnhub"
+                _calendar_fetched_at = now
+                return events
+        except Exception as e:
+            logger.warning("Finnhub calendar fetch failed: %s", e)
+
+    _calendar_cache = _template_events()
+    _calendar_source = "template"
+    _calendar_fetched_at = now
+    return _calendar_cache
+
+
+async def _fetch_finnhub_calendar(days_ahead: int = 30) -> list[dict]:
+    today = date.today()
+    end = today + timedelta(days=days_ahead)
+    url = "https://finnhub.io/api/v1/calendar/economic"
+    params = {
+        "from": today.isoformat(),
+        "to": end.isoformat(),
+        "token": settings.finnhub_api_key,
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        response = await client.get(url, params=params)
+        if response.status_code != 200:
+            return []
+        data = response.json()
+
+    events = []
+    for item in data.get("economicCalendar", []):
+        impact_raw = (item.get("impact") or "").lower()
+        if impact_raw in ("high", "3"):
+            impact = "high"
+        elif impact_raw in ("medium", "2"):
+            impact = "medium"
+        else:
+            impact = "low"
+
+        event_date = item.get("time", "")[:10] or today.isoformat()
+        country = (item.get("country") or "US").upper()
+        title = item.get("event") or "経済指標"
+        events.append({
+            "date": event_date,
+            "event_type": "economic",
+            "title": title,
+            "country": country,
+            "impact": impact,
+            "estimate": item.get("estimate"),
+            "actual": item.get("actual"),
+            "unit": item.get("unit"),
+        })
+
+    return sorted(events, key=lambda e: e["date"])
+
+
+def _template_events() -> list[dict]:
     """今後の経済イベントカレンダー（日付は本日基準で動的生成）"""
     today = date.today()
     templates = [

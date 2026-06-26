@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import Column, DateTime, Integer, Numeric, String, desc, select
 
+from src.autotrade.pnl import calc_realized_pnl_usd
 from src.broker.oanda import close_position as oanda_close, get_open_positions, place_market_order
 from src.db.database import Base, SessionLocal, engine
 
@@ -116,8 +117,8 @@ def list_open_positions(tenant_id: int | None = None, symbol: str | None = None)
     return items
 
 
-def _pos_dict(r: AutoTradePosition) -> dict:
-    return {
+def _pos_dict(r: AutoTradePosition, include_close: bool = False) -> dict:
+    d = {
         "id": r.id,
         "symbol": r.symbol,
         "side": r.side,
@@ -129,6 +130,42 @@ def _pos_dict(r: AutoTradePosition) -> dict:
         "order_id": r.order_id,
         "opened_at": r.opened_at.isoformat() if r.opened_at else None,
     }
+    if include_close or r.status == "CLOSED":
+        d["closed_at"] = r.closed_at.isoformat() if r.closed_at else None
+        d["close_price"] = float(r.close_price) if r.close_price else None
+        d["close_reason"] = r.close_reason
+        if d.get("close_price"):
+            d["realized_pnl_usd"] = calc_realized_pnl_usd(
+                r.symbol, r.side, r.units, float(r.entry_price), float(r.close_price)
+            )
+    return d
+
+
+def list_closed_positions(
+    tenant_id: int | None = None,
+    days: int = 90,
+    limit: int = 200,
+) -> list[dict]:
+    _ensure_table()
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    db = SessionLocal()
+    try:
+        q = (
+            select(AutoTradePosition)
+            .where(AutoTradePosition.status == "CLOSED")
+            .where(AutoTradePosition.closed_at >= since)
+            .order_by(desc(AutoTradePosition.closed_at))
+            .limit(limit)
+        )
+        if tenant_id is not None:
+            q = q.where(AutoTradePosition.tenant_id == tenant_id)
+        rows = db.execute(q).scalars().all()
+        return [_pos_dict(r, include_close=True) for r in rows]
+    except Exception as e:
+        logger.warning("list_closed_positions: %s", e)
+        return []
+    finally:
+        db.close()
 
 
 def close_position_record(
@@ -150,7 +187,7 @@ def close_position_record(
         row.close_price = close_price
         row.close_reason = reason
         db.commit()
-        return _pos_dict(row)
+        return _pos_dict(row, include_close=True)
     except Exception as e:
         logger.warning("close_position_record: %s", e)
         db.rollback()

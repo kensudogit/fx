@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -14,8 +15,13 @@ from src.autotrade.evaluator import (
 from src.autotrade.models import get_config, save_run
 from src.autotrade.positions import check_exits, open_position
 from src.broker.oanda import fetch_live_prices, place_market_order
+from src.infra.distributed_lock import release_lock, try_acquire_lock
 
 logger = logging.getLogger(__name__)
+
+
+def _tenant_lock_name(tenant_id: int | None) -> str:
+    return f"autotrade:tenant:{tenant_id if tenant_id is not None else 'default'}"
 
 
 async def evaluate_symbol(
@@ -45,25 +51,43 @@ async def evaluate_symbol(
         "price": context["price"],
     }
 
-    if fused["action"] == "hold":
-        return _result(symbol, "skipped", "hold", fused["confidence"], "hold シグナル", snapshot, tenant_id)
+    token = None
+    if not dry_run:
+        token = await asyncio.to_thread(try_acquire_lock, _tenant_lock_name(tenant_id), 300)
+        if not token:
+            return _result(
+                symbol,
+                "blocked",
+                fused["action"],
+                fused["confidence"],
+                "別インスタンスが同一テナントの自動取引を処理中です",
+                snapshot,
+                tenant_id,
+            )
 
-    if not passed:
-        return _result(symbol, "blocked", fused["action"], fused["confidence"], guard_reason, snapshot, tenant_id)
+    try:
+        if fused["action"] == "hold":
+            return _result(symbol, "skipped", "hold", fused["confidence"], "hold シグナル", snapshot, tenant_id)
 
-    if dry_run:
-        return _result(
-            symbol,
-            "ready",
-            fused["action"],
-            fused["confidence"],
-            f"実行可能 — {guard_reason}",
-            snapshot,
-            tenant_id,
-            order_plan=order_plan,
-        )
+        if not passed:
+            return _result(symbol, "blocked", fused["action"], fused["confidence"], guard_reason, snapshot, tenant_id)
 
-    return await execute_order(symbol, fused, order_plan, snapshot, tenant_id, trigger="manual")
+        if dry_run:
+            return _result(
+                symbol,
+                "ready",
+                fused["action"],
+                fused["confidence"],
+                f"実行可能 — {guard_reason}",
+                snapshot,
+                tenant_id,
+                order_plan=order_plan,
+            )
+
+        return await execute_order(symbol, fused, order_plan, snapshot, tenant_id, trigger="manual")
+    finally:
+        if not dry_run and token:
+            await asyncio.to_thread(release_lock, _tenant_lock_name(tenant_id), token)
 
 
 async def execute_order(
@@ -132,68 +156,75 @@ async def execute_order(
 
 async def run_cycle(tenant_id: int | None = None, trigger: str = "scheduler") -> list[dict]:
     """設定された全シンボルで1サイクル実行"""
-    config = get_config(tenant_id)
-    if not config.get("enabled"):
+    token = await asyncio.to_thread(try_acquire_lock, _tenant_lock_name(tenant_id), 300)
+    if not token:
+        logger.info("run_cycle skipped tenant=%s (distributed lock held)", tenant_id)
         return []
+    try:
+        config = get_config(tenant_id)
+        if not config.get("enabled"):
+            return []
 
-    trading_mode = config.get("mode", "paper")
-    results = []
-    for symbol in config.get("symbols", ["USDJPY"]):
-        try:
-            live = fetch_live_prices([symbol], tenant_id, trading_mode)
-            live_price = live.get(symbol.upper(), {}).get("price")
-            context = await gather_signal_context(symbol)
-            price = float(live_price) if live_price else context["price"]
-            fused = fuse_signals(context, config)
+        trading_mode = config.get("mode", "paper")
+        results = []
+        for symbol in config.get("symbols", ["USDJPY"]):
+            try:
+                live = fetch_live_prices([symbol], tenant_id, trading_mode)
+                live_price = live.get(symbol.upper(), {}).get("price")
+                context = await gather_signal_context(symbol)
+                price = float(live_price) if live_price else context["price"]
+                fused = fuse_signals(context, config)
 
-            for ex in check_exits(
-                symbol, price, tenant_id,
-                reverse_action=fused["action"],
-                auto_exit_on_reverse=config.get("auto_exit_on_reverse", True),
-                trading_mode=trading_mode,
-            ):
-                rec = _result(
-                    symbol, "executed", "close", fused["confidence"],
-                    f"決済 ({ex.get('close_reason', 'exit')}) @ {price}",
-                    {"exit": ex, "price": price}, tenant_id, trigger=trigger,
-                )
-                save_run(rec, tenant_id)
+                for ex in check_exits(
+                    symbol, price, tenant_id,
+                    reverse_action=fused["action"],
+                    auto_exit_on_reverse=config.get("auto_exit_on_reverse", True),
+                    trading_mode=trading_mode,
+                ):
+                    rec = _result(
+                        symbol, "executed", "close", fused["confidence"],
+                        f"決済 ({ex.get('close_reason', 'exit')}) @ {price}",
+                        {"exit": ex, "price": price}, tenant_id, trigger=trigger,
+                    )
+                    save_run(rec, tenant_id)
+                    results.append(rec)
+
+                passed, guard_reason = check_risk_guards(symbol, config, tenant_id, fused)
+
+                snapshot = {
+                    "fused": {k: v for k, v in fused.items() if k != "context"},
+                    "breakdown": fused.get("breakdown"),
+                    "guard_reason": guard_reason,
+                    "price": context["price"],
+                }
+
+                if fused["action"] == "hold" or not passed:
+                    rec = _result(
+                        symbol,
+                        "skipped" if fused["action"] == "hold" else "blocked",
+                        fused["action"],
+                        fused["confidence"],
+                        guard_reason,
+                        snapshot,
+                        tenant_id,
+                        trigger=trigger,
+                    )
+                    save_run(rec, tenant_id)
+                    results.append(rec)
+                    continue
+
+                order_plan = compute_order_size(symbol, config, context, fused["action"], tenant_id)
+                snapshot["order_plan"] = order_plan
+                rec = await execute_order(symbol, fused, order_plan, snapshot, tenant_id, trigger=trigger)
                 results.append(rec)
-
-            passed, guard_reason = check_risk_guards(symbol, config, tenant_id, fused)
-
-            snapshot = {
-                "fused": {k: v for k, v in fused.items() if k != "context"},
-                "breakdown": fused.get("breakdown"),
-                "guard_reason": guard_reason,
-                "price": context["price"],
-            }
-
-            if fused["action"] == "hold" or not passed:
-                rec = _result(
-                    symbol,
-                    "skipped" if fused["action"] == "hold" else "blocked",
-                    fused["action"],
-                    fused["confidence"],
-                    guard_reason,
-                    snapshot,
-                    tenant_id,
-                    trigger=trigger,
+            except Exception as e:
+                logger.exception("autotrade cycle %s: %s", symbol, e)
+                results.append(
+                    _result(symbol, "failed", "hold", 0, str(e), {}, tenant_id, trigger=trigger)
                 )
-                save_run(rec, tenant_id)
-                results.append(rec)
-                continue
-
-            order_plan = compute_order_size(symbol, config, context, fused["action"], tenant_id)
-            snapshot["order_plan"] = order_plan
-            rec = await execute_order(symbol, fused, order_plan, snapshot, tenant_id, trigger=trigger)
-            results.append(rec)
-        except Exception as e:
-            logger.exception("autotrade cycle %s: %s", symbol, e)
-            results.append(
-                _result(symbol, "failed", "hold", 0, str(e), {}, tenant_id, trigger=trigger)
-            )
-    return results
+        return results
+    finally:
+        await asyncio.to_thread(release_lock, _tenant_lock_name(tenant_id), token)
 
 
 async def process_tradingview_signal(signal: dict, tenant_id: int | None = None) -> dict | None:

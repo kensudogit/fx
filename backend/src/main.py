@@ -12,6 +12,8 @@ from src.analysis.fundamental import (
     get_event_alerts,
     get_fundamental_data,
     get_upcoming_events,
+    refresh_economic_calendar,
+    get_calendar_source,
 )
 from src.analysis.multi_timeframe import analyze_multi_timeframe
 from src.analysis.position_sizing import calculate_position_size
@@ -61,6 +63,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     init_database()
     bootstrap_auth()
+    try:
+        await refresh_economic_calendar()
+    except Exception as e:
+        logger.warning("economic calendar warmup failed: %s", e)
     if settings.autotrade_enabled:
         start_scheduler()
     yield
@@ -303,7 +309,8 @@ async def get_fundamental(event_type: str | None = None):
 
 @app.get("/api/fundamental/calendar")
 async def get_calendar():
-    return {"events": get_upcoming_events()}
+    await refresh_economic_calendar()
+    return {"events": get_upcoming_events(), "source": get_calendar_source()}
 
 
 @app.get("/api/fundamental/alerts")

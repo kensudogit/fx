@@ -244,7 +244,46 @@ export default function AutoTradePanel() {
 
       {error && <p className="error-text">{error}</p>}
 
-      <div className="card" style={{ marginBottom: "1.5rem" }}>
+      {performance && (
+        <div className="mobile-only autotrade-mobile-summary">
+          <div className="autotrade-mobile-summary-row">
+            <span className={`badge ${config.enabled ? "badge-buy" : "badge-neutral"}`}>
+              {config.enabled ? "自動取引 ON" : "OFF"}
+            </span>
+            <span className="hint">{config.mode ?? "paper"}</span>
+          </div>
+          <div className="stat-grid">
+            <div className="stat-item">
+              <div className="label">約定率</div>
+              <div className="value">{performance.summary.execution_rate_pct}%</div>
+            </div>
+            <div className="stat-item">
+              <div className="label">実現損益</div>
+              <div
+                className={`value ${
+                  (performance.pnl?.total_realized_usd ?? 0) >= 0 ? "text-buy" : "text-sell"
+                }`}
+              >
+                ${performance.pnl?.total_realized_usd ?? 0}
+              </div>
+            </div>
+            <div className="stat-item">
+              <div className="label">勝率</div>
+              <div className="value">{performance.pnl?.win_rate_pct ?? 0}%</div>
+            </div>
+          </div>
+          <div className="order-controls">
+            <button type="button" className="btn-secondary" disabled={running} onClick={handleEvaluate}>
+              ドライラン
+            </button>
+            <button type="button" className="btn-buy" disabled={running || !config.enabled} onClick={handleRunSymbol}>
+              実行
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="card desktop-only" style={{ marginBottom: "1.5rem" }}>
         <h2>セレクト — プリセット戦略</h2>
         <p className="hint">用意されたルールから選ぶだけで開始（現在: {config.strategy_preset ?? "balanced"}）</p>
         <div className="preset-grid">
@@ -264,7 +303,7 @@ export default function AutoTradePanel() {
         </div>
       </div>
 
-      <div className="grid-2" style={{ marginBottom: "1.5rem" }}>
+      <div className="grid-2 desktop-only" style={{ marginBottom: "1.5rem" }}>
         <div className="card">
           <h2>オートセレクト（3 問）</h2>
           <div className="form-grid">
@@ -354,7 +393,58 @@ export default function AutoTradePanel() {
               <div className="label">平均信頼度</div>
               <div className="value">{performance.summary.avg_confidence}%</div>
             </div>
+            <div className="stat-item">
+              <div className="label">実現損益</div>
+              <div
+                className={`value ${
+                  (performance.pnl?.total_realized_usd ?? 0) >= 0 ? "text-buy" : "text-sell"
+                }`}
+              >
+                ${performance.pnl?.total_realized_usd ?? 0}
+              </div>
+            </div>
+            <div className="stat-item">
+              <div className="label">勝率（決済）</div>
+              <div className="value">
+                {performance.pnl?.win_rate_pct ?? 0}% ({performance.pnl?.closed_trades ?? 0}件)
+              </div>
+            </div>
+            {scheduler?.distributed_lock && (
+              <div className="stat-item">
+                <div className="label">分散ロック</div>
+                <div className="value" style={{ fontSize: "0.85rem" }}>
+                  {scheduler.distributed_lock.backend === "redis" ? "Redis" : "単一プロセス"}
+                </div>
+              </div>
+            )}
           </div>
+          {performance.pnl?.weekly && performance.pnl.weekly.length > 0 && (
+            <>
+              <h3 style={{ marginTop: "1rem" }}>週次実現損益</h3>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>週（月曜〜）</th>
+                    <th>損益 USD</th>
+                    <th>決済数</th>
+                    <th>勝ち</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {performance.pnl.weekly.map((w) => (
+                    <tr key={w.week_start}>
+                      <td>{w.week_start}</td>
+                      <td className={w.realized_usd >= 0 ? "text-buy" : "text-sell"}>
+                        ${w.realized_usd}
+                      </td>
+                      <td>{w.trades}</td>
+                      <td>{w.wins}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
           <p className="hint">{performance.maintenance_hint}</p>
         </div>
       )}

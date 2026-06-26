@@ -1,12 +1,15 @@
 """運用パフォーマンス分析"""
 
 from src.autotrade.models import list_runs
+from src.autotrade.pnl import aggregate_pnl, weekly_pnl_breakdown
+from src.autotrade.positions import list_closed_positions
 from src.broker.oanda import list_orders
 
 
 def build_performance(tenant_id: int | None = None, limit: int = 100) -> dict:
     runs = list_runs(limit, tenant_id)
     orders = list_orders(limit, tenant_id)
+    closed = list_closed_positions(tenant_id, days=90)
 
     executed = [r for r in runs if r.get("decision") == "executed"]
     blocked = [r for r in runs if r.get("decision") == "blocked"]
@@ -25,6 +28,9 @@ def build_performance(tenant_id: int | None = None, limit: int = 100) -> dict:
 
     top_blocks = sorted(block_reasons.items(), key=lambda x: -x[1])[:5]
 
+    pnl_summary = aggregate_pnl(closed)
+    weekly = weekly_pnl_breakdown(closed, weeks=4)
+
     return {
         "summary": {
             "total_runs": len(runs),
@@ -36,18 +42,27 @@ def build_performance(tenant_id: int | None = None, limit: int = 100) -> dict:
             "buy_trades": buy_count,
             "sell_trades": sell_count,
         },
+        "pnl": {
+            **pnl_summary,
+            "weekly": weekly,
+        },
         "broker_orders": len(orders),
         "top_block_reasons": [{"reason": r, "count": c} for r, c in top_blocks],
         "recent_executed": executed[:10],
-        "maintenance_hint": _maintenance_hint(len(executed), len(blocked), avg_conf),
+        "recent_closed": closed[:10],
+        "maintenance_hint": _maintenance_hint(
+            len(executed), len(blocked), avg_conf, pnl_summary.get("total_realized_usd", 0)
+        ),
     }
 
 
-def _maintenance_hint(executed: int, blocked: int, avg_conf: float) -> str:
+def _maintenance_hint(executed: int, blocked: int, avg_conf: float, total_pnl: float) -> str:
     if executed == 0 and blocked > 5:
         return "ブロックが多い — 最低信頼度を下げるか、イベント回避時間を短縮してください（週1回見直し推奨）。"
     if avg_conf < 60 and executed > 0:
         return "平均信頼度が低め — プリセットを「安定型」に変更することを検討してください。"
+    if total_pnl < 0 and executed >= 5:
+        return f"実現損益 ${total_pnl} — 週次レポートを確認し、リスク%またはプリセットの見直しを推奨します。"
     if executed >= 10:
-        return "運用中 — 週1回、シミュレーション結果と実行ログを確認してください（トライオートFX推奨と同様）。"
+        return "運用中 — 週1回、実現損益・シミュレーション結果と実行ログを確認してください。"
     return "ドライラン評価 → シミュレーション確認 → 有効化の順で開始してください。"

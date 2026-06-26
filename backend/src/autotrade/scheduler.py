@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from src.autotrade.engine import run_cycle
 from src.autotrade.models import get_config, list_scheduler_eligible_tenant_ids
 from src.config import settings
+from src.infra.distributed_lock import lock_status
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ def scheduler_status(tenant_id: int | None = None) -> dict:
         "last_run_at": state.get("last_run_at"),
         "last_results_count": state.get("last_results_count", 0),
         "enabled_tenants": len(list_scheduler_eligible_tenant_ids()),
+        "distributed_lock": lock_status(),
     }
 
 
@@ -64,8 +66,6 @@ async def _scheduler_loop():
                     "last_run_at": now.isoformat(),
                     "last_results_count": len(results),
                 }
-                if results:
-                    logger.info("autotrade scheduler tenant=%s: %d results", tid, len(results))
         except Exception as e:
             logger.exception("autotrade scheduler error: %s", e)
 

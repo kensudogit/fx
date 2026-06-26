@@ -661,11 +661,29 @@ export interface AutoTradePerformance {
     total_runs: number;
     executed: number;
     blocked: number;
+    skipped?: number;
     execution_rate_pct: number;
     avg_confidence: number;
+    buy_trades?: number;
+    sell_trades?: number;
+  };
+  pnl?: {
+    total_realized_usd: number;
+    closed_trades: number;
+    wins: number;
+    losses: number;
+    win_rate_pct: number;
+    weekly: Array<{ week_start: string; realized_usd: number; trades: number; wins: number }>;
   };
   maintenance_hint: string;
   top_block_reasons: Array<{ reason: string; count: number }>;
+  recent_closed?: Array<{
+    symbol: string;
+    side: string;
+    realized_pnl_usd?: number;
+    close_reason?: string;
+    closed_at?: string;
+  }>;
 }
 
 export interface AutoTradeOrderPlan {
@@ -716,6 +734,7 @@ export interface AutoTradeStatus {
     last_results_count: number;
     interval_minutes: number;
     enabled_tenants: number;
+    distributed_lock?: { backend: string; redis_url_configured: boolean };
     /** @deprecated use global_running */
     scheduler_running?: boolean;
   };

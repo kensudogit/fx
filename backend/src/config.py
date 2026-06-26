@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     stripe_price_enterprise: str = ""
     app_public_url: str = "http://localhost:3000"
 
+    redis_url: str = ""
+
+    finnhub_api_key: str = ""
+
     cors_origins: str = "http://localhost:3000"
     port: int = 8000
 

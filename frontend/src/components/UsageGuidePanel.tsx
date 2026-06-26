@@ -6,7 +6,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const STORAGE_KEY = 'fx-tool-usage-guide-v3'
+const STORAGE_KEY = 'fx-tool-usage-guide-v4'
 const PANEL_WIDTH = 440
 
 type GuideStep = {
@@ -33,6 +33,7 @@ const architectureFeatured: FeaturedBlock = {
     'Next.js — テクニカル / ファンダ / 分析 / AI / Pro / ダッシュボード / 自動取引',
     'FastAPI :8000 — 指標計算 · ML · OpenAI · SaaS 認証',
     'PostgreSQL — OHLCV · テナント · 注文 · チャット履歴',
+    'Redis（任意）— 自動取引スケジューラの分散ロック（Railway 複数インスタンス対策）',
     'SaaS — JWT ログイン · プラン制 · API キー · 利用量トラッキング',
     '/health — 生存確認 · /docs — Swagger API リファレンス',
   ],
@@ -58,12 +59,13 @@ const fundamentalFeatured: FeaturedBlock = {
   badge: 'Fundamental',
   title: 'ファンダメンタル分析画面（/fundamental）',
   body:
-    '左カラムで主要指標の履歴を、右カラムで今後のイベントカレンダーを確認します。発表前後のボラティリティ想定や、AI 分析の前提知識として活用します。',
+    '左カラムで主要指標の履歴を、右カラムで今後のイベントカレンダーを確認します。FINNHUB_API_KEY 設定時は Finnhub から実カレンダーを取得します（未設定時はテンプレート）。',
   variant: 'fundamental',
   items: [
     '経済指標タブ — 米国雇用統計 · CPI · FOMC · 日銀政策決定会合 · GDP',
     '指標テーブル — 日付 / 実績 / 予想 / 前回 / 単位（FRED API またはサンプル）',
-    'イベントカレンダー — 日付 / イベント名 / 国 / 影響度（高・中）',
+    'イベントカレンダー — Finnhub 連携（source: finnhub）またはテンプレート（source: template）',
+    '影響度 — 高 / 中 / 低 · 自動取引のイベント回避・分析のイベントリスクに反映',
     '発表前 — 予想と前回の乖離を確認し、サプライズの方向を想定',
     '発表後 — 実績が予想を上回るか下回るかで通貨の方向性を判断',
   ],
@@ -122,16 +124,17 @@ const autotradeFeatured: FeaturedBlock = {
   badge: 'Auto Trade',
   title: '自動取引エンジン（/autotrade）',
   body:
-    'トライオートFX同様 — プリセット選択 · オートセレクト · 運用前シミュレーション · SL/TP 自動決済に対応。AI・テクニカル・統合分析を融合し OANDA / ペーパーで約定。Pro プラン以上。',
+    'トライオートFX同様 — プリセット · シミュレーション · SL/TP 自動決済に加え、実現損益・週次レポート・Redis 分散ロック（本番）に対応。スマホは下部ドック「自動」からコンパクト操作可能。Pro プラン以上。',
   variant: 'dashboard',
   items: [
     'セレクト — 5 種プリセット（安定型 / バランス / 積極 / レンジリピート / トレンド）',
     'オートセレクト — 運用資金 · 期間 · リスクの 3 問で最適プリセットを提案',
     'シミュレーション — 365 日 BT + 推奨/安全証拠金 + 運用可否（A〜D 評価）',
     'SL/TP — ATR ベースの損切り/利確を自動設定 · 逆シグナルで決済',
-    'ドライラン — 評価のみ実行（ready / blocked / skipped）',
+    '実現損益 — 決済ポジションの USD 損益 · 勝率 · 週次内訳（運用パフォーマンス欄）',
+    '分散ロック — REDIS_URL 設定時テナント単位で二重約定を防止（未設定時は単一プロセス）',
+    'スマホ — 下部ドック「⚡自動」· 約定率/損益サマリー · ドライラン/実行ボタン',
     'スケジューラ — 15 分間隔の自動サイクル · TradingView Webhook 即時実行',
-    '最小 1,000 units — オープンポジション · 運用パフォーマンスを画面表示',
   ],
 }
 
@@ -190,6 +193,8 @@ const techStack = [
   'Backtrader · scikit-learn',
   'OANDA · TradingView',
   'Auto Trade Engine',
+  'Redis · Finnhub',
+  'GitHub Actions CI',
   'Yahoo Finance · Railway',
 ] as const
 
@@ -208,7 +213,8 @@ Next.js :PORT (Railway)
     └─ /api/* ──proxy──► FastAPI :8000
               ├─ Yahoo Finance (OHLCV)
               ├─ PostgreSQL (tenant · orders · chat)
-              └─ OpenAI API (signals · brief · chat)`
+              ├─ Redis (autotrade lock · optional)
+              └─ OpenAI · Finnhub (calendar)`
 
 type GuideSection = {
   label: string
@@ -224,7 +230,8 @@ const guideSections: readonly GuideSection[] = [
         body: '本パネルは全画面で表示されます。PC ではヘッダーをドラッグして位置を変更でき、▼▲ で折りたたみ可能です。スマホでは画面下部のボトムシートとして表示されます。',
         items: [
           'PC — ヘッダーをドラッグで移動 · ▼▲ で開閉 · 位置はブラウザに自動保存',
-          'スマホ — 右上 ≡ でメニュー · 本パネルは画面下部（初期は折りたたみ）',
+          'スマホ — 右上 ≡ でメニュー · 下部ドック（FX / 5 / ⚡自動 / AI / ⚙）',
+          'スマホ自動取引 — ドック「⚡自動」→ 損益サマリー · ドライラン/実行（詳細設定はPC推奨）',
           '画面上部ナビ — テクニカル / ファンダ / マーケット分析 / AI / AI Pro / ダッシュボード / 自動取引 / 料金 / 設定',
           '推奨フロー — 登録 → テクニカル → 分析（相場環境·リスク）→ AI Pro → ダッシュボード → 自動取引',
           'プレゼン時 — パネルを画面端に寄せ、メイン画面を広く使う',
@@ -314,6 +321,8 @@ const guideSections: readonly GuideSection[] = [
         items: [
           '影響度「高」— 発表前後 30 分はスプレッド拡大・スリッページに注意',
           '複数イベント同日 — ボラティリティが重なる日はロット縮小を検討',
+          'Finnhub — FINNHUB_API_KEY を設定すると /api/fundamental/calendar が実データ取得',
+          '自動取引連動 — 高影響イベント前後は event_blackout_hours で新規エントリーを抑制',
           'AI 分析前 — 直近の高影響イベントを把握してから統合レポートを実行',
         ],
       },
@@ -451,7 +460,41 @@ const guideSections: readonly GuideSection[] = [
           'オートセレクト — 資金規模 · 運用期間 · リスク許容度で自動提案',
           'シミュレーション — 勝率 · 推奨証拠金 · 安全証拠金 · 運用可否を確認',
           'SL/TP — 損切り/利確を自動設定 · 逆シグナル決済 ON/OFF',
-          '運用パフォーマンス — 約定率 · ブロック理由 · 週 1 回メンテヒント',
+          '運用パフォーマンス — 約定率 · 実現損益 · 週次レポート · ブロック理由',
+        ],
+      },
+      {
+        title: '実現損益・週次レポート',
+        body: 'SL/TP・逆シグナルで決済されたポジションから USD 損益を集計します。週 1 回の運用見直しに使います。',
+        items: [
+          '実現損益 — 運用パフォーマンス欄の合計 USD（緑=プラス · 赤=マイナス）',
+          '勝率 — 決済件数に対する勝ちトレードの割合',
+          '週次内訳 — 月曜始まりの 4 週間 · 週ごとの損益・決済数・勝ち数',
+          '分散ロック — 「Redis」表示 = 本番複数インスタンス対応 · 「単一プロセス」= REDIS_URL 未設定',
+          'メンテヒント — 損益マイナス時はリスク%・プリセット見直しを提案',
+          'API — GET /api/autotrade/performance（pnl.weekly を含む）',
+        ],
+      },
+      {
+        title: 'スマホでの自動取引（/autotrade）',
+        body: '通勤中の状況確認・簡易操作向け。プリセット変更や詳細設定は PC 画面を推奨します。',
+        items: [
+          '遷移 — 画面下部ドックの「⚡ 自動」',
+          'サマリー — ON/OFF · 約定率 · 実現損益 · 勝率を一覧',
+          'クイック操作 — ドライラン · 実行（確認ダイアログあり）',
+          '実行ログ — カード形式で約定/ブロック履歴を表示',
+          'PC専用 — プリセット · オートセレクト · シミュレーション · 詳細設定',
+        ],
+      },
+      {
+        title: '本番 Railway — Redis 分散ロック',
+        body: 'Railway でレプリカが複数ある場合、同一テナントのスケジューラが二重実行されないよう Redis ロックを設定します。',
+        items: [
+          '① Railway ダッシュボード → Add Redis（または Upstash 等）',
+          '② REDIS_URL をバックエンドサービスの Variables に設定',
+          '③ 再デプロイ → /autotrade の「分散ロック: Redis」と表示される',
+          '未設定時 — 単一インスタンスのみ想定（開発・小規模デプロイ）',
+          '手動実行 · Webhook も同一テナントロックで競合を防止',
         ],
       },
       {
@@ -548,6 +591,8 @@ const guideSections: readonly GuideSection[] = [
         items: [
           'AUTOTRADE_ENABLED=true — 起動時スケジューラ有効',
           'AUTOTRADE_INTERVAL_MINUTES=15 — 定期実行間隔（分）',
+          'REDIS_URL — 自動取引分散ロック（Railway Redis 推奨 · 本番複数インスタンス時必須）',
+          'FINNHUB_API_KEY — 経済カレンダー API（無料枠 · 未設定時テンプレート）',
           'SAAS_DEFAULT_PLAN=pro — 新規登録時のプラン（2,000 API/日）',
           'OANDA_API_TOKEN · OANDA_ACCOUNT_ID — 未設定時ペーパー取引',
           'OANDA_ENVIRONMENT=practice — 本番前は practice 推奨',
@@ -590,6 +635,7 @@ const guideSections: readonly GuideSection[] = [
           '③ backend — py -3.12 -m venv .venv → pip install -r requirements.txt → python run.py',
           '④ frontend — npm install → npm run dev（:3000）',
           '⑤ 確認 — http://localhost:3000 · http://localhost:8000/docs',
+          '⑥ CI — push/PR で GitHub Actions（pytest + npm run build）が自動実行',
         ],
       },
       {
@@ -691,7 +737,8 @@ const guideSections: readonly GuideSection[] = [
           'POST /api/autotrade/presets/apply — プリセット適用',
           'POST /api/autotrade/autoselect — オートセレクト（3 問）',
           'GET /api/autotrade/simulate/{symbol} — 運用前シミュレーション',
-          'GET /api/autotrade/performance — 運用パフォーマンス',
+          'GET /api/autotrade/performance — 約定率 · 実現損益(pnl) · 週次内訳',
+          'GET /api/fundamental/calendar — 経済カレンダー（source: finnhub | template）',
           'GET /api/autotrade/positions — オープンポジション',
           'POST /api/autotrade/evaluate/{symbol} — ドライラン評価',
           'POST /api/autotrade/run/{symbol} — 手動約定',
@@ -704,11 +751,12 @@ const guideSections: readonly GuideSection[] = [
         title: 'Railway 本番・ローカル開発',
         body: 'デプロイとローカル起動の参考情報です。',
         items: [
-          '本番 — GitHub 連携 · DATABASE_URL · OPENAI_API_KEY · JWT_SECRET',
+          '本番 — GitHub 連携 · DATABASE_URL · OPENAI_API_KEY · JWT_SECRET · REDIS_URL',
           'SaaS — SAAS_ENABLED=true · NEXT_PUBLIC_SAAS_ENABLED=true',
           'ローカル — docker compose up -d → backend :8000 → frontend npm run dev :3000',
-          '環境変数 — OPENAI_API_KEY · OPENAI_MODEL=gpt-4o-mini · OANDA_*（任意）',
-          '自動取引 — AUTOTRADE_ENABLED · AUTOTRADE_INTERVAL_MINUTES',
+          '環境変数 — OPENAI_API_KEY · FINNHUB_API_KEY（任意）· OANDA_*（任意）',
+          '自動取引 — AUTOTRADE_ENABLED · AUTOTRADE_INTERVAL_MINUTES · REDIS_URL',
+          'CI — .github/workflows/ci.yml · requirements-ci.txt（軽量 pytest）',
         ],
       },
       {
@@ -720,7 +768,7 @@ const guideSections: readonly GuideSection[] = [
           '5–7分: /analysis — 相場環境 · リスク管理（Readiness）· 総合スコア',
           '7–11分: /pro — AIシグナル・市場ブリーフ・ウォークフォワード',
           '11–13分: /dashboard — TradingView + OANDA + Backtrader',
-          '13–14分: /autotrade — プリセット · シミュレーション · SL/TP · ドライラン',
+          '13–14分: /autotrade — 実現損益 · 週次 · プリセット · ドライラン · 分散ロック',
           '14–15分: /ai 総合レポート · /settings APIキー · /docs',
         ],
       },
