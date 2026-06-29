@@ -9,6 +9,7 @@ from src.analysis.volatility import calc_atr, calc_volatility_stats
 from src.analysis.technical import compute_all_indicators
 from src.data.market_data import get_ohlcv_data
 from src.infra.analysis_cache import cache_get, cache_key, cache_put
+from src.ml.model_store import load_or_train, model_file
 
 
 def _atr_series(df: pd.DataFrame, period: int = 14) -> pd.Series:
@@ -66,6 +67,8 @@ def predict_volatility(
 
     # ML: 将来 ATR を回帰
     ml_forecast = None
+    test_r2 = None
+    inference = "ewma_fallback"
     lookback = 5
     feat_df = pd.DataFrame({
         "atr": atr_s,
@@ -85,13 +88,25 @@ def predict_volatility(
             y.append(float(target.iloc[i]))
         if len(X) >= 30:
             X_arr, y_arr = np.array(X), np.array(y)
-            X_train, X_test, y_train, y_test = train_test_split(
-                X_arr, y_arr, test_size=0.2, shuffle=False
-            )
-            model = RandomForestRegressor(n_estimators=60, random_state=42, n_jobs=-1)
-            model.fit(X_train, y_train)
-            ml_forecast = float(model.predict(X_arr[-1].reshape(1, -1))[0])
-            test_r2 = float(model.score(X_test, y_test))
+            path = model_file("volatility", symbol, days=days, forecast=forecast_days)
+            last_features = X_arr[-1]
+
+            def _train() -> dict:
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X_arr, y_arr, test_size=0.2, shuffle=False
+                )
+                model = RandomForestRegressor(n_estimators=60, random_state=42, n_jobs=-1)
+                model.fit(X_train, y_train)
+                return {
+                    "model": model,
+                    "test_r2": round(float(model.score(X_test, y_test)), 4),
+                }
+
+            bundle = load_or_train(path, _train)
+            model = bundle["model"]
+            ml_forecast = float(model.predict(last_features.reshape(1, -1))[0])
+            test_r2 = bundle.get("test_r2")
+            inference = "cached" if bundle.get("loaded_from_disk") else "trained"
 
     predicted_atr = ml_forecast if ml_forecast else ewma_atr
     predicted_atr_pct = predicted_atr / close * 100 if close else 0
@@ -130,6 +145,8 @@ def predict_volatility(
             "status": "success" if ml_forecast else "ewma_fallback",
             "model": "RandomForestRegressor" if ml_forecast else "EWMA",
             "predicted_atr": round(predicted_atr, 4),
+            "test_r2": test_r2,
+            "inference": inference,
         },
         "interpretation": (
             f"今後{forecast_days}日のATR予測: {predicted_atr:.4f} "

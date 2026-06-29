@@ -54,7 +54,7 @@ from src.backtest.backtrader_runner import run_backtrader_backtest
 from src.broker.oanda import get_account_summary, list_orders, place_market_order
 from src.config import settings
 from src.ml.news_sentiment import analyze_headlines_ml
-from src.ml.predictor import predict_price, train_price_predictor
+from src.ml.predictor import predict_price
 from src.ml.trend_predictor import predict_trend
 from src.ml.volatility_predictor import predict_volatility
 from src.auth.middleware import SaaSAuthMiddleware
@@ -62,6 +62,7 @@ from src.auth.router import router as auth_router
 from src.auth.service import bootstrap_auth
 from src.auth.context import get_tenant_id
 from src.tradingview.service import list_signals, save_signal
+from src.infra.warmup import warm_analysis_cache
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,8 @@ async def lifespan(app: FastAPI):
         logger.warning("economic calendar warmup failed: %s", e)
     if settings.autotrade_enabled:
         start_scheduler()
+    if settings.cache_warmup_enabled:
+        asyncio.create_task(warm_analysis_cache())
     yield
 
 

@@ -51,6 +51,11 @@ class Settings(BaseSettings):
 
     analysis_cache_ttl_seconds: int = 900  # ML / インテリジェンス結果キャッシュ（15分）
     mtf_cache_ttl_seconds: int = 900
+    ml_model_ttl_seconds: int = 3600  # ディスク上の sklearn モデル有効期間（1時間）
+    signal_context_cache_ttl_seconds: int = 300  # 自動売買シグナル統合（5分）
+    sns_cache_ttl_seconds: int = 600
+    cache_warmup_enabled: bool = True
+    cache_warmup_symbols: str = "USDJPY,EURUSD,GBPUSD"
 
     cors_origins: str = "http://localhost:3000"
     port: int = 8000

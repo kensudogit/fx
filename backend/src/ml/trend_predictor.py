@@ -9,6 +9,7 @@ from src.analysis.multi_timeframe import analyze_multi_timeframe
 from src.analysis.technical import compute_all_indicators
 from src.data.market_data import get_ohlcv_data
 from src.infra.analysis_cache import cache_get, cache_key, cache_put
+from src.ml.model_store import load_or_train, model_file
 
 
 def _rule_trend(latest: pd.Series) -> tuple[str, list[str]]:
@@ -106,10 +107,19 @@ def predict_trend(
     ml_result: dict = {"status": "insufficient_data"}
 
     if len(X) >= 40:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
-        model = RandomForestClassifier(n_estimators=80, random_state=42, n_jobs=-1)
-        model.fit(X_train, y_train)
-        acc = float(model.score(X_test, y_test))
+        path = model_file("trend", symbol, days=days, horizon=horizon)
+
+        def _train() -> dict:
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+            model = RandomForestClassifier(n_estimators=80, random_state=42, n_jobs=-1)
+            model.fit(X_train, y_train)
+            return {
+                "model": model,
+                "test_accuracy": round(float(model.score(X_test, y_test)) * 100, 1),
+            }
+
+        bundle = load_or_train(path, _train)
+        model = bundle["model"]
         pred = int(model.predict(X[-1].reshape(1, -1))[0])
         proba = model.predict_proba(X[-1].reshape(1, -1))[0]
         trend_map = {1: "bullish", 0: "bearish", 2: "neutral"}
@@ -120,8 +130,9 @@ def predict_trend(
             "trend": ml_trend,
             "confidence": confidence,
             "horizon_days": horizon,
-            "test_accuracy": round(acc * 100, 1),
+            "test_accuracy": bundle.get("test_accuracy"),
             "model": "RandomForestClassifier",
+            "inference": "cached" if bundle.get("loaded_from_disk") else "trained",
         }
     else:
         ml_trend = rule_trend

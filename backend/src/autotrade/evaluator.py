@@ -15,6 +15,8 @@ from src.api.intelligence import build_intelligence
 from src.autotrade.models import count_today_trades, last_executed_at
 from src.autotrade.positions import has_open_position
 from src.broker.oanda import get_account_summary
+from src.config import settings
+from src.infra.analysis_cache import cache_get, cache_key, cache_put
 from src.ml.trend_predictor import predict_trend
 from src.ml.volatility_predictor import predict_volatility
 
@@ -41,6 +43,11 @@ def _normalize_action(action: str) -> str:
 
 async def gather_signal_context(symbol: str, days: int = 200) -> dict[str, Any]:
     """全シグナルソースを並列収集（OHLCV / 指標 / ML の重複計算を排除）"""
+    key = cache_key("signal:context", symbol, days=days)
+    cached = cache_get(key)
+    if cached is not None:
+        return cached
+
     ctx = await asyncio.to_thread(MarketContext.load, symbol, days)
     latest = ctx.result_df.iloc[-1]
     price = ctx.price
@@ -98,7 +105,7 @@ async def gather_signal_context(symbol: str, days: int = 200) -> dict[str, Any]:
         intel_action = "hold"
         intel_conf = 40
 
-    return {
+    result = {
         "symbol": symbol.upper(),
         "price": price,
         "source": ctx.source,
@@ -119,6 +126,8 @@ async def gather_signal_context(symbol: str, days: int = 200) -> dict[str, Any]:
         },
         "ai_detail": ai,
     }
+    cache_put(key, result, ttl_seconds=settings.signal_context_cache_ttl_seconds)
+    return result
 
 
 def fuse_signals(context: dict, config: dict, tv_signal: dict | None = None) -> dict:
