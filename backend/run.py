@@ -1,3 +1,9 @@
+"""
+バックエンド — run.py
+
+FX トレード支援プラットフォーム。
+"""
+
 import uvicorn
 
 if __name__ == "__main__":

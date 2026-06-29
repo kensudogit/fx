@@ -1,3 +1,9 @@
+"""
+データベース — db/database
+
+このモジュールは FX トレード支援プラットフォームの一部です。
+"""
+
 import json
 import logging
 from datetime import datetime

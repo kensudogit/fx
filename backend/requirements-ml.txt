@@ -1,0 +1,4 @@
+# Optional deep-learning stack (~600 MB). Install after requirements.txt.
+# Retry on network errors:  install-ml.bat
+tensorflow==2.18.0
+torch==2.5.1

@@ -1,10 +1,11 @@
+# Requires Python 3.11 or 3.12 (NOT 3.14+ — no binary wheels on Windows)
+# Install:  install.bat          (core — fast, ~100 MB)
+#           install-ml.bat         (optional TensorFlow + PyTorch, ~600 MB)
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pandas==2.2.3
 numpy>=1.26.0,<2.1.0
 scikit-learn==1.6.0
-tensorflow==2.18.0
-torch==2.5.1
 matplotlib==3.10.0
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10

@@ -1,4 +1,9 @@
-"""Per-tenant autotrade scheduler"""
+"""
+自動売買 — autotrade/scheduler
+
+テナント別の自動取引スケジューラ。
+このモジュールは FX トレード支援プラットフォームの一部です。
+"""
 
 from __future__ import annotations
 

@@ -1,3 +1,9 @@
+"""
+FastAPI エントリポイント — main
+
+このモジュールは FX トレード支援プラットフォームの一部です。
+"""
+
 from contextlib import asynccontextmanager
 import logging
 

@@ -1,3 +1,9 @@
+"""
+アプリケーション設定 — config
+
+このモジュールは FX トレード支援プラットフォームの一部です。
+"""
+
 from pydantic_settings import BaseSettings
 
 
