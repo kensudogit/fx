@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from src.analysis.volatility import calc_atr, calc_volatility_stats
 from src.analysis.technical import compute_all_indicators
 from src.data.market_data import get_ohlcv_data
+from src.infra.analysis_cache import cache_get, cache_key, cache_put
 
 
 def _atr_series(df: pd.DataFrame, period: int = 14) -> pd.Series:
@@ -35,9 +36,25 @@ def _vol_regime(atr_pct: float) -> tuple[str, str]:
     return "high", "高ボラ（急変動注意）"
 
 
-def predict_volatility(symbol: str, days: int = 200, forecast_days: int = 5) -> dict:
-    df, source = get_ohlcv_data(symbol, days)
-    result_df = compute_all_indicators(df)
+def predict_volatility(
+    symbol: str,
+    days: int = 200,
+    forecast_days: int = 5,
+    *,
+    result_df: pd.DataFrame | None = None,
+    source: str | None = None,
+) -> dict:
+    key = cache_key("ml:vol", symbol, days=days, forecast=forecast_days)
+    if result_df is None:
+        cached = cache_get(key)
+        if cached is not None:
+            return cached
+
+    if result_df is None:
+        df, source = get_ohlcv_data(symbol, days)
+        result_df = compute_all_indicators(df)
+    else:
+        source = source or "shared"
     close = float(result_df["close"].iloc[-1])
 
     current = calc_volatility_stats(result_df)
@@ -93,7 +110,7 @@ def predict_volatility(symbol: str, days: int = 200, forecast_days: int = 5) -> 
         vol_trend = "stable"
         vol_trend_label = "ボラ横ばい見込み"
 
-    return {
+    result = {
         "symbol": symbol.upper(),
         "source": source,
         "current_price": round(close, 4),
@@ -119,3 +136,5 @@ def predict_volatility(symbol: str, days: int = 200, forecast_days: int = 5) -> 
             f"({predicted_atr_pct:.2f}%) — {regime_label}、{vol_trend_label}"
         ),
     }
+    cache_put(key, result)
+    return result

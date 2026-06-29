@@ -1,3 +1,9 @@
+/**
+ * React コンポーネント — TradingViewWidget
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 "use client";
 
 import { useEffect, useRef } from "react";

@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from src.analysis.multi_timeframe import analyze_multi_timeframe
 from src.analysis.technical import compute_all_indicators
 from src.data.market_data import get_ohlcv_data
+from src.infra.analysis_cache import cache_get, cache_key, cache_put
 
 
 def _rule_trend(latest: pd.Series) -> tuple[str, list[str]]:
@@ -73,14 +74,33 @@ def _build_trend_dataset(df: pd.DataFrame, horizon: int = 5, lookback: int = 5) 
     return np.array(X), np.array(y)
 
 
-def predict_trend(symbol: str, days: int = 200, horizon: int = 5) -> dict:
-    df, source = get_ohlcv_data(symbol, days)
-    result_df = compute_all_indicators(df)
+def predict_trend(
+    symbol: str,
+    days: int = 200,
+    horizon: int = 5,
+    *,
+    result_df: pd.DataFrame | None = None,
+    source: str | None = None,
+    mtf: dict | None = None,
+) -> dict:
+    key = cache_key("ml:trend", symbol, days=days, horizon=horizon)
+    if result_df is None:
+        cached = cache_get(key)
+        if cached is not None:
+            return cached
+
+    if result_df is None:
+        df, source = get_ohlcv_data(symbol, days)
+        result_df = compute_all_indicators(df)
+    else:
+        source = source or "shared"
+
     latest = result_df.iloc[-1]
     price = float(latest["close"])
 
     rule_trend, reasons = _rule_trend(latest)
-    mtf = analyze_multi_timeframe(symbol)
+    if mtf is None:
+        mtf = analyze_multi_timeframe(symbol)
 
     X, y = _build_trend_dataset(result_df, horizon=horizon)
     ml_result: dict = {"status": "insufficient_data"}
@@ -121,7 +141,7 @@ def predict_trend(symbol: str, days: int = 200, horizon: int = 5) -> dict:
         combined = "neutral"
         label = "レンジ / 方向感なし"
 
-    return {
+    result = {
         "symbol": symbol.upper(),
         "source": source,
         "current_price": round(price, 4),
@@ -136,3 +156,5 @@ def predict_trend(symbol: str, days: int = 200, horizon: int = 5) -> dict:
             "alignment_label": mtf.get("alignment_label"),
         },
     }
+    cache_put(key, result)
+    return result

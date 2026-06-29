@@ -1,3 +1,9 @@
+/**
+ * React コンポーネント — PositionSizePanel
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";

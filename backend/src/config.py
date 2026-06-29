@@ -49,6 +49,9 @@ class Settings(BaseSettings):
 
     finnhub_api_key: str = ""
 
+    analysis_cache_ttl_seconds: int = 900  # ML / インテリジェンス結果キャッシュ（15分）
+    mtf_cache_ttl_seconds: int = 900
+
     cors_origins: str = "http://localhost:3000"
     port: int = 8000
 

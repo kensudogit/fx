@@ -1,3 +1,9 @@
+/**
+ * フロントエンド共通ライブラリ — auth
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 const TOKEN_KEY = "fx_access_token";
 const API_KEY_KEY = "fx_api_key";
 

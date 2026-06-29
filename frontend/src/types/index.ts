@@ -1,3 +1,9 @@
+/**
+ * フロントエンド — types/index
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 export interface OHLCV {
   timestamp: string;
   open: number;

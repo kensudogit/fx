@@ -1,3 +1,9 @@
+/**
+ * Next.js ページ — route
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 
 const INTERNAL_API =

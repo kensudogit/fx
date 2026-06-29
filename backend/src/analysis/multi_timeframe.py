@@ -4,7 +4,9 @@ import pandas as pd
 
 from src.analysis.signals import aggregate_bias, signals_from_row
 from src.analysis.technical import compute_all_indicators
+from src.config import settings
 from src.data.market_data import get_ohlcv_data
+from src.infra.analysis_cache import cache_get, cache_key, cache_put
 
 
 def _trend_from_df(df: pd.DataFrame) -> dict:
@@ -44,6 +46,11 @@ def _trend_from_df(df: pd.DataFrame) -> dict:
 
 
 def analyze_multi_timeframe(symbol: str) -> dict:
+    key = cache_key("mtf", symbol)
+    cached = cache_get(key)
+    if cached is not None:
+        return cached
+
     daily_df, daily_src = get_ohlcv_data(symbol, days=200, timeframe="1d")
     h4_df, h4_src = get_ohlcv_data(symbol, days=60, timeframe="4h")
 
@@ -62,7 +69,7 @@ def analyze_multi_timeframe(symbol: str) -> dict:
         alignment = "bearish_bias"
         alignment_label = "日足下降バイアス"
 
-    return {
+    result = {
         "symbol": symbol.upper(),
         "alignment": alignment,
         "alignment_label": alignment_label,
@@ -71,3 +78,5 @@ def analyze_multi_timeframe(symbol: str) -> dict:
             "4h": {**h4, "timeframe": "4h", "source": h4_src},
         },
     }
+    cache_put(key, result, ttl_seconds=settings.mtf_cache_ttl_seconds)
+    return result

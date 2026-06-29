@@ -9,10 +9,8 @@ timeout /t 5 /nobreak > nul
 echo.
 echo [2/4] Setting up Python backend...
 cd backend
-if exist .venv rmdir /s /q .venv
-py -3.12 -m venv .venv
-call .venv\Scripts\activate
-pip install -r requirements.txt
+call install.bat
+if errorlevel 1 exit /b 1
 cd ..
 
 if not exist .env copy .env.example .env

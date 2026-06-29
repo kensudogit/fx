@@ -1,3 +1,9 @@
+/**
+ * Next.js ページ — page
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 "use client";
 
 import { useState } from "react";

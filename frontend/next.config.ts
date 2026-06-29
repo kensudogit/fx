@@ -1,3 +1,5 @@
+/** Next.js 設定 — FX トレード支援プラットフォーム */
+
 import type { NextConfig } from "next";
 import path from "path";
 

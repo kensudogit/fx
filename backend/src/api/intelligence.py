@@ -1,17 +1,42 @@
 """5大分析の統合 BFF"""
 
+import asyncio
+
 from src.ai.client import resolve_openai_api_key
 from src.ai.news import analyze_news, fetch_rss_news
 from src.analysis.economic import analyze_economic
 from src.analysis.sns import analyze_sns
+from src.config import settings
+from src.infra.analysis_cache import cache_get, cache_key, cache_put
 from src.ml.news_sentiment import analyze_headlines_ml
 from src.ml.trend_predictor import predict_trend
 from src.ml.volatility_predictor import predict_volatility
 
 
-async def build_intelligence(symbol: str, days: int = 200) -> dict:
-    trend = predict_trend(symbol, days)
-    volatility = predict_volatility(symbol, days)
+async def build_intelligence(
+    symbol: str,
+    days: int = 200,
+    *,
+    trend: dict | None = None,
+    volatility: dict | None = None,
+) -> dict:
+    key = cache_key("intel", symbol, days=days)
+    standalone = trend is None and volatility is None
+    if standalone:
+        cached = cache_get(key)
+        if cached is not None:
+            return cached
+
+    if trend is None:
+        trend = await asyncio.to_thread(predict_trend, symbol, days)
+    if volatility is None:
+        volatility = await asyncio.to_thread(
+            predict_volatility,
+            symbol,
+            days,
+            result_df=None,
+        )
+
     economic = await analyze_economic(symbol)
     sns = await analyze_sns(symbol, 10)
 
@@ -56,7 +81,7 @@ async def build_intelligence(symbol: str, days: int = 200) -> dict:
         outlook = "neutral"
         outlook_label = "総合見通し: 中立"
 
-    return {
+    result = {
         "symbol": symbol.upper(),
         "composite_score": composite,
         "outlook": outlook,
@@ -72,3 +97,6 @@ async def build_intelligence(symbol: str, days: int = 200) -> dict:
         "economic": economic,
         "volatility": volatility,
     }
+    if standalone:
+        cache_put(key, result, ttl_seconds=settings.analysis_cache_ttl_seconds)
+    return result

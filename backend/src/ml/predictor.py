@@ -6,6 +6,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
+from src.analysis.market_context import MarketContext
+from src.infra.analysis_cache import cache_get, cache_key, cache_put
+
 
 def prepare_features(df: pd.DataFrame, lookback: int = 5) -> tuple[np.ndarray, np.ndarray]:
     """テクニカル指標を特徴量として準備"""
@@ -63,3 +66,17 @@ def train_price_predictor(df: pd.DataFrame) -> dict:
         "test_r2": round(test_score, 4),
         "model": "RandomForestRegressor",
     }
+
+
+def predict_price(symbol: str, days: int = 200) -> dict:
+    """価格予測（キャッシュ付き）"""
+    key = cache_key("ml:price", symbol, days=days)
+    cached = cache_get(key)
+    if cached is not None:
+        return cached
+
+    ctx = MarketContext.load(symbol, days)
+    prediction = train_price_predictor(ctx.result_df)
+    result = {"symbol": symbol.upper(), "source": ctx.source, **prediction}
+    cache_put(key, result)
+    return result

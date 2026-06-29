@@ -7,16 +7,16 @@ from typing import Any
 
 from src.ai.signals import generate_ai_signals
 from src.analysis.fundamental import get_event_alerts
+from src.analysis.market_context import MarketContext
 from src.analysis.multi_timeframe import analyze_multi_timeframe
 from src.analysis.position_sizing import calculate_position_size, pip_size
 from src.analysis.signals import signals_from_row
-from src.analysis.technical import compute_all_indicators
-from src.analysis.volatility import calc_atr
 from src.api.intelligence import build_intelligence
 from src.autotrade.models import count_today_trades, last_executed_at
 from src.autotrade.positions import has_open_position
 from src.broker.oanda import get_account_summary
-from src.data.market_data import get_ohlcv_data
+from src.ml.trend_predictor import predict_trend
+from src.ml.volatility_predictor import predict_volatility
 
 
 SOURCE_WEIGHTS = {
@@ -40,16 +40,36 @@ def _normalize_action(action: str) -> str:
 
 
 async def gather_signal_context(symbol: str, days: int = 200) -> dict[str, Any]:
-    """全シグナルソースを並列収集"""
-    df, source = get_ohlcv_data(symbol, days)
-    result_df = compute_all_indicators(df)
-    latest = result_df.iloc[-1]
-    price = float(latest["close"])
-    atr = calc_atr(result_df)
+    """全シグナルソースを並列収集（OHLCV / 指標 / ML の重複計算を排除）"""
+    ctx = await asyncio.to_thread(MarketContext.load, symbol, days)
+    latest = ctx.result_df.iloc[-1]
+    price = ctx.price
+    atr = ctx.atr
 
-    ai_task = generate_ai_signals(symbol, days)
-    intel_task = build_intelligence(symbol, days)
-    ai, intelligence = await asyncio.gather(ai_task, intel_task)
+    mtf = await asyncio.to_thread(analyze_multi_timeframe, symbol)
+
+    trend, volatility = await asyncio.gather(
+        asyncio.to_thread(
+            predict_trend,
+            symbol,
+            days,
+            result_df=ctx.result_df,
+            source=ctx.source,
+            mtf=mtf,
+        ),
+        asyncio.to_thread(
+            predict_volatility,
+            symbol,
+            days,
+            result_df=ctx.result_df,
+            source=ctx.source,
+        ),
+    )
+
+    ai, intelligence = await asyncio.gather(
+        generate_ai_signals(symbol, days, ctx=ctx, mtf=mtf, trend=trend),
+        build_intelligence(symbol, days, trend=trend, volatility=volatility),
+    )
 
     rule_signals = signals_from_row(latest)
     buy_count = sum(1 for s in rule_signals if s["signal"] == "buy")
@@ -64,7 +84,6 @@ async def gather_signal_context(symbol: str, days: int = 200) -> dict[str, Any]:
         tech_action = "hold"
         tech_conf = 40
 
-    mtf = analyze_multi_timeframe(symbol)
     mtf_action = _normalize_action(mtf.get("alignment", "neutral"))
     mtf_conf = 70 if mtf_action in ("buy", "sell") else 45
 
@@ -82,7 +101,7 @@ async def gather_signal_context(symbol: str, days: int = 200) -> dict[str, Any]:
     return {
         "symbol": symbol.upper(),
         "price": price,
-        "source": source,
+        "source": ctx.source,
         "atr": atr,
         "ai": {"action": ai["action"], "confidence": ai["confidence"]},
         "technical": {"action": tech_action, "confidence": tech_conf, "signals": rule_signals},

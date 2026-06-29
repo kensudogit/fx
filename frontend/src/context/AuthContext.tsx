@@ -1,3 +1,9 @@
+/**
+ * React Context — AuthContext
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";

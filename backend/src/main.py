@@ -5,9 +5,10 @@ FastAPI エントリポイント — main
 """
 
 from contextlib import asynccontextmanager
+import asyncio
 import logging
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 
@@ -53,7 +54,7 @@ from src.backtest.backtrader_runner import run_backtrader_backtest
 from src.broker.oanda import get_account_summary, list_orders, place_market_order
 from src.config import settings
 from src.ml.news_sentiment import analyze_headlines_ml
-from src.ml.predictor import train_price_predictor
+from src.ml.predictor import predict_price, train_price_predictor
 from src.ml.trend_predictor import predict_trend
 from src.ml.volatility_predictor import predict_volatility
 from src.auth.middleware import SaaSAuthMiddleware
@@ -258,7 +259,7 @@ async def get_trading_signals(symbol: str, days: int = Query(default=200, ge=30,
 async def get_multi_timeframe(symbol: str):
     symbol = _validate_symbol(symbol)
     try:
-        return analyze_multi_timeframe(symbol)
+        return await asyncio.to_thread(analyze_multi_timeframe, symbol)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -343,13 +344,9 @@ async def ai_status():
 
 
 @app.get("/api/ml/predict/{symbol}")
-async def predict_price(symbol: str, days: int = Query(default=200, ge=50, le=500)):
+async def predict_price_endpoint(symbol: str, days: int = Query(default=200, ge=50, le=500)):
     symbol = _validate_symbol(symbol)
-    df, source = get_ohlcv_data(symbol, days)
-    result_df = compute_all_indicators(df)
-    prediction = train_price_predictor(result_df)
-
-    return {"symbol": symbol, "source": source, **prediction}
+    return await asyncio.to_thread(predict_price, symbol, days)
 
 
 @app.get("/api/ai/news/{symbol}")
@@ -421,8 +418,17 @@ async def ai_full_report(
 
 
 # ── TradingView Webhook ──
-@app.post("/api/tradingview/webhook")
-async def tradingview_webhook(request: Request):
+async def _run_tradingview_autotrade(signal: dict, tenant_id: int | None) -> None:
+    try:
+        from src.autotrade.engine import process_tradingview_signal
+
+        await process_tradingview_signal(signal, tenant_id)
+    except Exception as e:
+        logger.exception("TradingView autotrade failed for tenant %s: %s", tenant_id, e)
+
+
+@app.post("/api/tradingview/webhook", status_code=202)
+async def tradingview_webhook(request: Request, background_tasks: BackgroundTasks):
     """TradingView アラート → Webhook URL（SaaS: X-API-Key でテナント特定）"""
     try:
         payload = await request.json()
@@ -457,22 +463,18 @@ async def tradingview_webhook(request: Request):
 
     signal = save_signal(payload, tenant_id)
 
-    autotrade_result = None
-    autotrade_error = None
-    try:
-        from src.autotrade.engine import process_tradingview_signal
+    from src.autotrade.models import get_config
 
-        autotrade_result = await process_tradingview_signal(signal, tenant_id)
-    except Exception as e:
-        logger.exception("TradingView autotrade failed for tenant %s: %s", tenant_id, e)
-        autotrade_error = str(e)
+    config = get_config(tenant_id)
+    if config.get("enabled") and config.get("auto_execute_tradingview"):
+        background_tasks.add_task(_run_tradingview_autotrade, signal, tenant_id)
+        return {
+            "ok": True,
+            "signal": signal,
+            "autotrade": "processing",
+        }
 
-    return {
-        "ok": True,
-        "signal": signal,
-        "autotrade": autotrade_result,
-        "autotrade_error": autotrade_error,
-    }
+    return {"ok": True, "signal": signal, "autotrade": None}
 
 
 @app.get("/api/tradingview/signals")
@@ -558,7 +560,7 @@ async def dashboard(symbol: str = Query(default="USDJPY"), days: int = Query(def
 @app.get("/api/analysis/trend/{symbol}")
 async def analysis_trend(symbol: str, days: int = Query(default=200, ge=60, le=500)):
     symbol = _validate_symbol(symbol)
-    return predict_trend(symbol, days)
+    return await asyncio.to_thread(predict_trend, symbol, days)
 
 
 @app.get("/api/analysis/news/{symbol}")
@@ -602,7 +604,7 @@ async def analysis_economic(symbol: str):
 @app.get("/api/analysis/volatility/{symbol}")
 async def analysis_volatility(symbol: str, days: int = Query(default=200, ge=60, le=500)):
     symbol = _validate_symbol(symbol)
-    return predict_volatility(symbol, days)
+    return await asyncio.to_thread(predict_volatility, symbol, days)
 
 
 @app.get("/api/analysis/intelligence/{symbol}")

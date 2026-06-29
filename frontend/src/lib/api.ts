@@ -1,3 +1,9 @@
+/**
+ * フロントエンド共通ライブラリ — api
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 import { authHeaders, clearAuth, SAAS_ENABLED } from "./auth";
 import type { SignalBacktest, BacktraderResult, WalkForwardResult } from "@/types";
 

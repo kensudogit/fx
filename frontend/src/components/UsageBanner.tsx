@@ -1,3 +1,9 @@
+/**
+ * React コンポーネント — UsageBanner
+ *
+ * FX トレード支援プラットフォーム（フロントエンド）
+ */
+
 "use client";
 
 import Link from "next/link";

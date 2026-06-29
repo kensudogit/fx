@@ -1,23 +1,48 @@
 """AI 売買シグナル生成（テクニカル + ML + OpenAI 統合）"""
 
+from __future__ import annotations
+
+import asyncio
+from typing import TYPE_CHECKING
+
 from src.ai.analyzer import make_trading_decision
 from src.ai.client import resolve_openai_api_key
 from src.analysis.multi_timeframe import analyze_multi_timeframe
 from src.analysis.signals import signals_from_row
-from src.analysis.technical import compute_all_indicators
-from src.data.market_data import get_ohlcv_data
 from src.ml.trend_predictor import predict_trend
 
+if TYPE_CHECKING:
+    from src.analysis.market_context import MarketContext
 
-async def generate_ai_signals(symbol: str, days: int = 200) -> dict:
-    df, source = get_ohlcv_data(symbol, days)
-    result_df = compute_all_indicators(df)
-    latest = result_df.iloc[-1]
+
+async def generate_ai_signals(
+    symbol: str,
+    days: int = 200,
+    *,
+    ctx: MarketContext | None = None,
+    mtf: dict | None = None,
+    trend: dict | None = None,
+) -> dict:
+    if ctx is None:
+        from src.analysis.market_context import MarketContext
+
+        ctx = await asyncio.to_thread(MarketContext.load, symbol, days)
+
+    latest = ctx.result_df.iloc[-1]
     price = float(latest["close"])
-
     rule_signals = signals_from_row(latest)
-    mtf = analyze_multi_timeframe(symbol)
-    trend = predict_trend(symbol, days)
+
+    if mtf is None:
+        mtf = await asyncio.to_thread(analyze_multi_timeframe, symbol)
+    if trend is None:
+        trend = await asyncio.to_thread(
+            predict_trend,
+            symbol,
+            days,
+            result_df=ctx.result_df,
+            source=ctx.source,
+            mtf=mtf,
+        )
 
     buy = sum(1 for s in rule_signals if s["signal"] == "buy")
     sell = sum(1 for s in rule_signals if s["signal"] == "sell")
@@ -58,7 +83,7 @@ async def generate_ai_signals(symbol: str, days: int = 200) -> dict:
 
     return {
         "symbol": symbol.upper(),
-        "source": source,
+        "source": ctx.source,
         "price": round(price, 4),
         "action": composite_action,
         "confidence": confidence,
