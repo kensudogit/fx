@@ -108,6 +108,39 @@ export function getChartUrl(symbol: string, days = 200): string {
   return `${base}/api/chart/${symbol}?days=${days}`;
 }
 
+/** 認証ヘッダー付きでチャート PNG を取得し、新しいタブで表示 */
+export async function openChartImage(symbol: string, days = 200): Promise<void> {
+  const res = await fetch(getChartUrl(symbol, days), {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      if (body?.detail) {
+        detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+      }
+    } catch {
+      /* PNG 以外のエラー応答 */
+    }
+    if (SAAS_ENABLED && res.status === 401 && typeof window !== "undefined") {
+      clearAuth();
+      window.location.href = "/login";
+      throw new Error("セッションの有効期限が切れました。再ログインしてください。");
+    }
+    throw new Error(detail);
+  }
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const tab = window.open(objectUrl, "_blank", "noopener,noreferrer");
+  if (!tab) {
+    URL.revokeObjectURL(objectUrl);
+    throw new Error("ポップアップがブロックされました。ブラウザの設定を確認してください。");
+  }
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+}
+
 export const SOURCE_LABELS: Record<string, string> = {
   database: "PostgreSQL",
   yahoo_finance: "Yahoo Finance",

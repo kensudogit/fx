@@ -13,7 +13,7 @@ import {
   getMLPrediction,
   getSymbols,
   syncMarketData,
-  getChartUrl,
+  openChartImage,
   SOURCE_LABELS,
 } from "@/lib/api";
 import type { TechnicalAnalysis, TradingSignal, MLPrediction } from "@/types";
@@ -40,6 +40,7 @@ export default function TechnicalDashboard() {
   const [activeTab, setActiveTab] = useState<IndicatorTab>("price");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [openingChart, setOpeningChart] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { quotes, connected } = useLivePrices([symbol], !loading);
   const liveQuote = quotes[symbol];
@@ -85,6 +86,18 @@ export default function TechnicalDashboard() {
     }
   };
 
+  const handleOpenChart = async () => {
+    setOpeningChart(true);
+    setError(null);
+    try {
+      await openChartImage(symbol, days);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "チャート画像の取得に失敗しました");
+    } finally {
+      setOpeningChart(false);
+    }
+  };
+
   if (loading && !data) {
     return <div className="loading">データを読み込み中...</div>;
   }
@@ -121,9 +134,14 @@ export default function TechnicalDashboard() {
           <button className="btn" onClick={handleSync} disabled={syncing}>
             {syncing ? "同期中..." : "データ同期"}
           </button>
-          <a className="btn btn-secondary" href={getChartUrl(symbol, days)} target="_blank" rel="noreferrer">
-            チャート画像
-          </a>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleOpenChart}
+            disabled={openingChart}
+          >
+            {openingChart ? "取得中..." : "チャート画像"}
+          </button>
         </div>
       </div>
 
