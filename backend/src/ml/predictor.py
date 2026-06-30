@@ -36,7 +36,7 @@ def prepare_features(df: pd.DataFrame, lookback: int = 5) -> tuple[np.ndarray, n
     return np.array(X), np.array(y)
 
 
-def train_price_predictor(df: pd.DataFrame, symbol: str = "", days: int = 200) -> dict:
+def train_price_predictor_sklearn(df: pd.DataFrame, symbol: str = "", days: int = 200) -> dict:
     """RandomForest による価格予測（モデル永続化対応）"""
     X, y = prepare_features(df)
     if len(X) < 20:
@@ -73,13 +73,33 @@ def train_price_predictor(df: pd.DataFrame, symbol: str = "", days: int = 200) -
         "train_r2": bundle.get("train_r2"),
         "test_r2": bundle.get("test_r2"),
         "model": "RandomForestRegressor",
+        "backend": "sklearn",
         "inference": "cached" if bundle.get("loaded_from_disk") else "trained",
     }
 
 
+def train_price_predictor(df: pd.DataFrame, symbol: str = "", days: int = 200) -> dict:
+    """設定に応じて sklearn / TensorFlow / PyTorch で価格予測"""
+    from src.ml.deep_learning import (
+        resolve_price_backend,
+        train_pytorch_price_predictor,
+        train_tensorflow_price_predictor,
+    )
+
+    backend = resolve_price_backend()
+    if backend == "tensorflow":
+        return train_tensorflow_price_predictor(df, symbol, days)
+    if backend == "pytorch":
+        return train_pytorch_price_predictor(df, symbol, days)
+    return train_price_predictor_sklearn(df, symbol, days)
+
+
 def predict_price(symbol: str, days: int = 200) -> dict:
     """価格予測（キャッシュ + モデル永続化）"""
-    key = cache_key("ml:price", symbol, days=days)
+    from src.ml.deep_learning import resolve_price_backend
+
+    backend = resolve_price_backend()
+    key = cache_key("ml:price", symbol, days=days, backend=backend)
     cached = cache_get(key)
     if cached is not None:
         return cached

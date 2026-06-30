@@ -165,7 +165,32 @@ def _build_technical_response(symbol: str, result_df, source: str) -> dict:
 @app.get("/health")
 async def health():
     frameworks = check_ml_frameworks()
-    return {"status": "ok", "ml_frameworks": frameworks}
+    from src.ml.deep_learning import resolve_price_backend
+
+    return {
+        "status": "ok",
+        "ml_frameworks": frameworks,
+        "ml_price_backend": resolve_price_backend(),
+        "ml_price_backend_config": settings.ml_price_backend,
+    }
+
+
+@app.get("/api/ml/frameworks")
+async def ml_frameworks():
+    from src.ml.deep_learning import resolve_price_backend
+
+    frameworks = check_ml_frameworks()
+    return {
+        "frameworks": frameworks,
+        "price_backend_active": resolve_price_backend(),
+        "price_backend_config": settings.ml_price_backend,
+        "lstm": {
+            "lookback": settings.ml_lstm_lookback,
+            "epochs": settings.ml_lstm_epochs,
+            "units": settings.ml_lstm_units,
+            "batch_size": settings.ml_lstm_batch_size,
+        },
+    }
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -3,7 +3,7 @@
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
-from src.ml.model_store import load_or_train, model_file, save_bundle, load_bundle
+from src.ml.model_store import dl_model_paths, load_or_train, model_file, save_bundle, load_bundle
 
 
 class TestModelStore:
@@ -35,3 +35,10 @@ class TestModelStore:
         assert calls["n"] == 1
         assert first["loaded_from_disk"] is False
         assert second["loaded_from_disk"] is True
+
+    def test_dl_model_paths(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("src.ml.model_store.MODELS_DIR", tmp_path)
+        tf_paths = dl_model_paths("price", "USDJPY", "tensorflow", days=200)
+        pt_paths = dl_model_paths("price", "USDJPY", "pytorch", days=200)
+        assert tf_paths["model"].name.endswith("_tf.keras")
+        assert pt_paths["model"].name.endswith("_pt.pt")

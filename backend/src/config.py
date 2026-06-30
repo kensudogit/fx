@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     analysis_cache_ttl_seconds: int = 900  # ML / インテリジェンス結果キャッシュ（15分）
     mtf_cache_ttl_seconds: int = 900
     ml_model_ttl_seconds: int = 3600  # ディスク上の sklearn モデル有効期間（1時間）
+    ml_price_backend: str = "auto"  # auto | sklearn | tensorflow | pytorch
+    ml_lstm_lookback: int = 20  # LSTM 入力系列長
+    ml_lstm_epochs: int = 25
+    ml_lstm_units: int = 32
+    ml_lstm_batch_size: int = 16
     signal_context_cache_ttl_seconds: int = 300  # 自動売買シグナル統合（5分）
     sns_cache_ttl_seconds: int = 600
     cache_warmup_enabled: bool = True
