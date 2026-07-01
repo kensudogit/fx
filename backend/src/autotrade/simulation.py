@@ -58,6 +58,36 @@ def simulate_strategy(
 
     # 過去データを取得してテクニカル指標を計算
     df, source = get_ohlcv_data(symbol, days)
+
+    # 一目均衡表の計算に最低 80 行必要。不足時は days を延長して再取得
+    if len(df) < 80:
+        df, source = get_ohlcv_data(symbol, max(days, 200))
+
+    # それでもデータが不足する場合は計算不能として早期リターン
+    if len(df) < 30:
+        return {
+            "symbol": symbol.upper(),
+            "source": source,
+            "period_days": days,
+            "preset_id": preset_id,
+            "backtest": {"total_trades": 0, "win_rate": 0, "avg_return_pct": 0},
+            "position_sizing": {},
+            "capital": {
+                "input_balance": account_balance,
+                "recommended_margin_usd": account_balance,
+                "safe_margin_usd": account_balance * 1.5,
+                "note": "データ不足のため証拠金試算をスキップしました。",
+            },
+            "assessment": {
+                "grade": "D",
+                "win_rate": 0,
+                "total_trades": 0,
+                "avg_return_pct": 0,
+                "ready_to_deploy": False,
+                "summary": "データ不足 — 先にテクニカル画面で「データ同期」を実行してください。",
+            },
+        }
+
     result_df = compute_all_indicators(df)
 
     # シグナルベースのバックテストを実行（勝率・平均リターン等を算出）

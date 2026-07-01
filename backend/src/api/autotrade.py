@@ -16,6 +16,8 @@
 データを分離して管理する。
 """
 
+import asyncio
+
 from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -267,8 +269,22 @@ async def autotrade_simulate(
         dict: シミュレーション結果（総トレード数・勝率・最終残高・最大ドローダウンなど）
     """
     sym = _validate_symbol(symbol)
-    # 検証済みシンボルと設定でシミュレーション実行
-    return simulate_strategy(sym, days, account_balance, preset_id, risk_percent)
+    try:
+        # simulate_strategy は CPU バウンドの同期関数のため asyncio.to_thread で実行し
+        # イベントループをブロックしないようにする
+        result = await asyncio.to_thread(
+            simulate_strategy, sym, days, account_balance, preset_id, risk_percent
+        )
+        return result
+    except ValueError as e:
+        # 不正なプリセット ID など入力値エラー
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Yahoo Finance 接続失敗・データ不足・計算エラー等をわかりやすいメッセージで返す
+        raise HTTPException(
+            status_code=500,
+            detail=f"シミュレーション実行中にエラーが発生しました: {type(e).__name__}: {e}",
+        )
 
 
 @router.get("/api/autotrade/performance")
