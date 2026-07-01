@@ -29,6 +29,7 @@ from src.autotrade.models import DEFAULT_CONFIG, get_config, list_runs, save_con
 from src.autotrade.positions import list_open_positions
 from src.autotrade.presets import apply_preset, list_presets
 from src.autotrade.scheduler import scheduler_status, set_tenant_scheduler_enabled, start_scheduler, stop_scheduler
+from src.autotrade.simulation import simulate_strategy
 from src.auth.context import get_tenant_id
 from src.data.sample_data import SYMBOL_BASE_PRICES
 
