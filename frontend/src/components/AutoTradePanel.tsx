@@ -428,7 +428,6 @@ export default function AutoTradePanel() {
         <p className="hint">用意されたルールから選ぶだけで開始（現在: {config.strategy_preset ?? "balanced"}）</p>
         <div className="preset-grid">
           {presets.map((p) => (
-            {/* 現在適用中のプリセットにはアクティブスタイルを適用 */}
             <button
               key={p.id}
               type="button"
@@ -436,6 +435,7 @@ export default function AutoTradePanel() {
               disabled={saving}
               onClick={() => handleApplyPreset(p.id)}
             >
+              {/* 現在適用中のプリセットにはアクティブスタイルを適用 */}
               <strong>{p.label}</strong>
               <span className="hint">{p.description}</span>
               <span className="preset-meta">信頼度 {p.min_confidence}% · RR {p.risk_reward}</span>
