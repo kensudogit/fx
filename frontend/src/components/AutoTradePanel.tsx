@@ -131,6 +131,10 @@ export default function AutoTradePanel() {
   const [saving, setSaving] = useState(false);
   /** 評価・実行中フラグ（実行ボタンの無効化制御） */
   const [running, setRunning] = useState(false);
+  /** シミュレーション処理中フラグ（シミュレーションカード専用） */
+  const [simulating, setSimulating] = useState(false);
+  /** シミュレーション専用エラーメッセージ（カード内に表示） */
+  const [simError, setSimError] = useState<string | null>(null);
   /** エラーメッセージ */
   const [error, setError] = useState<string | null>(null);
 
@@ -318,8 +322,8 @@ export default function AutoTradePanel() {
    * 実際の注文は発行しない。
    */
   const handleSimulate = async () => {
-    setRunning(true);
-    setError(null);
+    setSimulating(true);
+    setSimError(null);
     try {
       const res = await simulateAutoTrade(symbol, {
         accountBalance: config?.account_balance,
@@ -327,9 +331,9 @@ export default function AutoTradePanel() {
       });
       setSimulation(res);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "シミュレーションに失敗しました");
+      setSimError(e instanceof Error ? e.message : "シミュレーションに失敗しました");
     } finally {
-      setRunning(false);
+      setSimulating(false);
     }
   };
 
@@ -496,20 +500,38 @@ export default function AutoTradePanel() {
         <div className="card">
           <h2>運用前シミュレーション</h2>
           <p className="hint">{symbol} · 過去 365 日バックテスト + 推奨証拠金</p>
-          <button type="button" className="btn-secondary" disabled={running} onClick={handleSimulate}>
-            シミュレーション実行
+          <button type="button" className="btn-secondary" disabled={simulating} onClick={handleSimulate}>
+            {simulating ? "⏳ 計算中..." : "シミュレーション実行"}
           </button>
+          {/* シミュレーション専用エラー — カード内に表示 */}
+          {simError && (
+            <p className="error-text" style={{ marginTop: "0.5rem" }}>
+              ⚠ {simError}
+            </p>
+          )}
+          {/* シミュレーション処理中インジケータ */}
+          {simulating && (
+            <p className="hint" style={{ marginTop: "0.5rem" }}>
+              365 日分のデータでバックテストを実行しています。数秒お待ちください...
+            </p>
+          )}
           {/* シミュレーション結果が取得された場合のみ表示 */}
-          {simulation && (
+          {simulation && !simulating && (
             <div className="eval-result" style={{ marginTop: "1rem" }}>
               <div className="stat-grid">
                 <div className="stat-item">
-                  <div className="label">評価</div>
-                  <div className="value">{simulation.assessment.grade}</div>
+                  <div className="label">評価グレード</div>
+                  <div className="value" style={{ color: simulation.assessment.grade === "A" || simulation.assessment.grade === "B" ? "#22c55e" : "#f59e0b" }}>
+                    {simulation.assessment.grade}
+                  </div>
                 </div>
                 <div className="stat-item">
                   <div className="label">勝率</div>
                   <div className="value">{simulation.backtest.win_rate}%</div>
+                </div>
+                <div className="stat-item">
+                  <div className="label">取引数</div>
+                  <div className="value">{simulation.backtest.total_trades}回</div>
                 </div>
                 <div className="stat-item">
                   <div className="label">推奨証拠金</div>
@@ -519,8 +541,14 @@ export default function AutoTradePanel() {
                   <div className="label">安全証拠金</div>
                   <div className="value">${simulation.capital.safe_margin_usd.toLocaleString()}</div>
                 </div>
+                <div className="stat-item">
+                  <div className="label">運用可否</div>
+                  <div className="value" style={{ color: simulation.assessment.ready_to_deploy ? "#22c55e" : "#f59e0b" }}>
+                    {simulation.assessment.ready_to_deploy ? "✓ 可" : "要検討"}
+                  </div>
+                </div>
               </div>
-              <p className="hint">{simulation.assessment.summary}</p>
+              <p className="hint" style={{ marginTop: "0.5rem" }}>{simulation.assessment.summary}</p>
             </div>
           )}
         </div>
