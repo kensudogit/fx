@@ -428,10 +428,10 @@ export default function AutoTradePanel() {
         <p className="hint">用意されたルールから選ぶだけで開始（現在: {config.strategy_preset ?? "balanced"}）</p>
         <div className="preset-grid">
           {presets.map((p) => (
+            {/* 現在適用中のプリセットにはアクティブスタイルを適用 */}
             <button
               key={p.id}
               type="button"
-              {/* 現在適用中のプリセットにはアクティブスタイルを適用 */}
               className={`preset-card ${config.strategy_preset === p.id ? "preset-active" : ""}`}
               disabled={saving}
               onClick={() => handleApplyPreset(p.id)}

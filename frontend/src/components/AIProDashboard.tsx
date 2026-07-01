@@ -435,10 +435,10 @@ export default function AIProDashboard() {
             <div ref={chatEndRef} />
           </div>
           <div className="chat-input-row">
+            {/* Enter キー（Shift 非押下）で sendChat を呼び出す */}
             <input
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              {/* Enter キー（Shift 非押下）で sendChat を呼び出す */}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendChat()}
               placeholder="例: USDJPYの今週の戦略を教えて"
             />
