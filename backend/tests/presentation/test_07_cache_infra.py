@@ -181,48 +181,91 @@ class TestGetOrCompute:
 
 
 class TestSaaSPlans:
-    """SaaS プラン定義テスト（機能フラグ・日次リミット）。"""
+    """SaaS プラン定義テスト（機能フラグ・日次リミット）。
+
+    plans.py の構造:
+      - PLANS: {"free": {...}, "pro": {...}, "enterprise": {...}}
+      - plan_features(plan): フィーチャーフラグ辞書を返す
+      - daily_limit(plan): 日次 API 上限を返す
+      - 未知プランは "free" にフォールバック（セキュリティ設計）
+    """
 
     @pytest.fixture(autouse=True)
     def import_module(self):
         """プランモジュールをインポート。"""
         try:
-            from src.auth.plans import get_plan, FREE_PLAN, PRO_PLAN
-            self.get_plan = get_plan
-            self.FREE_PLAN = FREE_PLAN
-            self.PRO_PLAN = PRO_PLAN
+            from src.auth.plans import PLANS, daily_limit, plan_features
+            self.PLANS = PLANS
+            self.plan_features = plan_features
+            self.daily_limit = daily_limit
         except ImportError as exc:
             pytest.skip(f"依存関係不足のためスキップ: {exc}")
 
-    def test_free_plan_exists(self):
-        """FREE_PLAN が定義されていることを確認する。"""
-        assert self.FREE_PLAN is not None, "FREE_PLAN が定義されている必要があります"
+    def test_three_plans_defined(self):
+        """free / pro / enterprise の 3 プランが定義されていることを確認する。"""
+        assert "free" in self.PLANS, "free プランが定義されている必要があります"
+        assert "pro" in self.PLANS, "pro プランが定義されている必要があります"
+        assert "enterprise" in self.PLANS, "enterprise プランが定義されている必要があります"
 
-    def test_pro_plan_exists(self):
-        """PRO_PLAN が定義されていることを確認する。"""
-        assert self.PRO_PLAN is not None, "PRO_PLAN が定義されている必要があります"
+    def test_free_plan_has_lower_daily_limit_than_pro(self):
+        """FREE プランの日次 API 上限が PRO より低いことを確認する。
 
-    def test_free_plan_has_lower_daily_limit(self):
-        """FREE プランの日次リミットが PRO より低いことを確認する。
-
-        SaaS モデルの基本: 無料プランは制限付き、有料プランは高リミット。
+        SaaS モデルの基本: 無料プランは制限付き（100 回/日）、
+        PRO プランは高リミット（2,000 回/日）。
         """
-        free_limit = self.FREE_PLAN.get("daily_analysis_limit", 0)
-        pro_limit = self.PRO_PLAN.get("daily_analysis_limit", 0)
+        free_limit = self.daily_limit("free")
+        pro_limit = self.daily_limit("pro")
         assert free_limit < pro_limit, \
-            f"FREE ({free_limit}) < PRO ({pro_limit}) が期待されます"
+            f"FREE ({free_limit}/日) < PRO ({pro_limit}/日) が期待されます"
 
-    def test_unknown_plan_falls_back_to_free(self):
-        """未知のプラン名で FREE プランが返されることを確認する。
+    def test_free_daily_limit_is_100(self):
+        """FREE プランの日次上限が 100 回/日であることを確認する。"""
+        assert self.daily_limit("free") == 100, \
+            f"FREE プランの日次上限は 100 が期待されます: {self.daily_limit('free')}"
+
+    def test_pro_daily_limit_is_2000(self):
+        """PRO プランの日次上限が 2,000 回/日であることを確認する。"""
+        assert self.daily_limit("pro") == 2000, \
+            f"PRO プランの日次上限は 2000 が期待されます: {self.daily_limit('pro')}"
+
+    def test_unknown_plan_falls_back_to_free_limit(self):
+        """未知のプラン名で FREE プランの日次上限（100）が返されることを確認する。
 
         セキュリティ設計: 不明なプランは最低権限（FREE）にフォールバックする。
         """
-        result = self.get_plan("nonexistent_plan_xyz")
-        assert result == self.FREE_PLAN or result.get("name") in ("free", "Free"), \
-            "未知のプランは FREE プランにフォールバックする必要があります"
+        unknown_limit = self.daily_limit("nonexistent_plan_xyz")
+        free_limit = self.daily_limit("free")
+        assert unknown_limit == free_limit, \
+            f"未知プランは FREE の日次上限 ({free_limit}) にフォールバックする必要があります: {unknown_limit}"
 
-    def test_pro_plan_has_ai_features(self):
-        """PRO プランが AI 機能を有効にしていることを確認する。"""
-        features = self.PRO_PLAN.get("features", {})
-        ai_enabled = features.get("ai_analysis", features.get("ai", False))
-        assert ai_enabled, "PRO プランは AI 機能が有効である必要があります"
+    def test_free_plan_ai_basic_enabled(self):
+        """FREE プランで基本 AI 機能が有効であることを確認する。
+
+        FREE プランでも基本的な AI 分析は利用可能（ai=True）。
+        AI Pro (ai_pro) のみ有料プラン限定。
+        """
+        features = self.plan_features("free")
+        assert features.get("ai") is True, \
+            f"FREE プランで AI 基本機能 (ai) が有効である必要があります: {features.get('ai')}"
+
+    def test_free_plan_autotrade_disabled(self):
+        """FREE プランで自動取引が無効であることを確認する。
+
+        自動取引は PRO 以上のプレミアム機能。
+        """
+        features = self.plan_features("free")
+        assert not features.get("autotrade"), \
+            "FREE プランの自動取引は無効である必要があります"
+
+    def test_pro_plan_autotrade_enabled(self):
+        """PRO プランで自動取引が有効であることを確認する。"""
+        features = self.plan_features("pro")
+        assert features.get("autotrade") is True, \
+            f"PRO プランの自動取引は有効である必要があります: {features.get('autotrade')}"
+
+    def test_pro_plan_has_more_api_keys_than_free(self):
+        """PRO プランが FREE より多くの API キーを発行できることを確認する。"""
+        free_keys = self.plan_features("free").get("api_keys", 0)
+        pro_keys = self.plan_features("pro").get("api_keys", 0)
+        assert pro_keys > free_keys, \
+            f"PRO ({pro_keys} 本) > FREE ({free_keys} 本) の API キー上限が期待されます"

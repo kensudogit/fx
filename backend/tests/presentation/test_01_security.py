@@ -102,21 +102,30 @@ class TestJWTTokens:
 
     FX プラットフォームでは Bearer JWT をセッション認証に使用。
     トークンのペイロード構造・署名検証・有効期限を検証する。
+
+    create_access_token のシグネチャ:
+        create_access_token(user_id: int, tenant_id: int, email: str, role: str) -> str
+    decode_access_token のシグネチャ:
+        decode_access_token(token: str) -> dict | None
     """
 
     @pytest.fixture(autouse=True)
     def import_security(self):
         """テスト前にセキュリティモジュールをインポート。"""
         try:
-            from src.auth.security import create_access_token, decode_token
+            from src.auth.security import create_access_token, decode_access_token
             self.create_access_token = create_access_token
-            self.decode_token = decode_token
+            self.decode_access_token = decode_access_token
         except ImportError as exc:
             pytest.skip(f"依存関係不足のためスキップ: {exc}")
 
+    def _make_token(self, user_id=1, tenant_id=1, email="test@fx.com", role="owner"):
+        """テスト用トークン生成ヘルパー。"""
+        return self.create_access_token(user_id, tenant_id, email, role)
+
     def test_token_is_string(self):
         """create_access_token が文字列を返すことを確認する。"""
-        token = self.create_access_token({"sub": "user@example.com"})
+        token = self._make_token()
         assert isinstance(token, str), "JWT トークンは文字列である必要があります"
 
     def test_token_has_three_parts(self):
@@ -124,54 +133,64 @@ class TestJWTTokens:
 
         JWT は '.' で区切られた 3 パーツで構成される。
         """
-        token = self.create_access_token({"sub": "user@example.com"})
+        token = self._make_token()
         parts = token.split(".")
         assert len(parts) == 3, f"JWT は '.' で区切られた 3 パーツが必要です: {len(parts)} パーツ検出"
 
-    def test_decode_returns_original_subject(self):
-        """デコードしたトークンの sub クレームが元の値と一致することを確認する。"""
-        email = "testuser@fx-platform.com"
-        token = self.create_access_token({"sub": email})
-        payload = self.decode_token(token)
+    def test_decode_returns_user_id_as_sub(self):
+        """デコードしたトークンの sub クレームがユーザー ID であることを確認する。
+
+        sub クレームには str(user_id) が格納される。
+        """
+        token = self._make_token(user_id=42)
+        payload = self.decode_access_token(token)
         assert payload is not None, "有効なトークンはデコードできる必要があります"
-        assert payload.get("sub") == email, \
-            f"sub クレームが一致しません。期待: {email}, 実際: {payload.get('sub')}"
+        assert payload.get("sub") == "42", \
+            f"sub クレームはユーザー ID の文字列が期待されます: {payload.get('sub')}"
 
     def test_decoded_payload_contains_expiry(self):
         """デコードしたペイロードに exp（有効期限）クレームが含まれることを確認する。
 
         有効期限はリプレイ攻撃（盗んだトークンの再利用）を防ぐために必須。
         """
-        token = self.create_access_token({"sub": "user@example.com"})
-        payload = self.decode_token(token)
+        token = self._make_token()
+        payload = self.decode_access_token(token)
+        assert payload is not None, "トークンのデコードに成功する必要があります"
         assert "exp" in payload, "JWT ペイロードには有効期限 (exp) が含まれる必要があります"
 
-    def test_custom_claims_are_preserved(self):
-        """カスタムクレーム（tenant_id, role 等）がトークンに保持されることを確認する。
+    def test_tenant_id_is_preserved(self):
+        """tenant_id クレームがトークンに保持されることを確認する。
 
         マルチテナント対応のため tenant_id をクレームに含め、
         各リクエストでテナントを識別する。
         """
-        claims = {"sub": "admin@example.com", "tenant_id": 42, "role": "admin"}
-        token = self.create_access_token(claims)
-        payload = self.decode_token(token)
-        assert payload.get("tenant_id") == 42, "tenant_id クレームが保持される必要があります"
-        assert payload.get("role") == "admin", "role クレームが保持される必要があります"
+        token = self._make_token(tenant_id=99)
+        payload = self.decode_access_token(token)
+        assert payload is not None
+        assert payload.get("tenant_id") == 99, \
+            f"tenant_id クレームは 99 が期待されます: {payload.get('tenant_id')}"
+
+    def test_role_is_preserved(self):
+        """role クレームがトークンに保持されることを確認する。"""
+        token = self._make_token(role="owner")
+        payload = self.decode_access_token(token)
+        assert payload is not None
+        assert payload.get("role") == "owner", \
+            f"role クレームは 'owner' が期待されます: {payload.get('role')}"
 
     def test_invalid_token_returns_none(self):
         """無効なトークンのデコードが None を返すことを確認する（例外を投げない）。
 
-        改ざんされたトークンは InvalidToken 例外ではなく None を返す設計。
+        改ざんされたトークンは PyJWTError を内部でキャッチして None を返す設計。
         """
-        result = self.decode_token("invalid.token.string")
+        result = self.decode_access_token("invalid.token.string")
         assert result is None, "無効なトークンは None を返す必要があります"
 
     def test_tampered_token_returns_none(self):
         """署名を改ざんしたトークンが None を返すことを確認する。"""
-        token = self.create_access_token({"sub": "user@example.com"})
-        # 最後の文字を変更して署名を無効化
+        token = self._make_token()
         tampered = token[:-1] + ("A" if token[-1] != "A" else "B")
-        result = self.decode_token(tampered)
+        result = self.decode_access_token(tampered)
         assert result is None, "改ざんされたトークンは None を返す必要があります"
 
 

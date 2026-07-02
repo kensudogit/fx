@@ -143,55 +143,74 @@ class TestSignalFromRow:
                 f"signal は 'buy' または 'sell' である必要があります: {s.get('signal')}"
 
 
-class TestAggregateSignals:
-    """aggregate_signals — シグナルの多数決バイアス集計テスト。"""
+class TestAggregateBias:
+    """aggregate_bias — シグナルの多数決バイアス集計テスト。
+
+    aggregate_bias は signals リストを受け取り "buy" / "sell" / "neutral" の
+    文字列を返す。（辞書ではなく文字列）
+    """
 
     @pytest.fixture(autouse=True)
     def import_module(self):
         """シグナルモジュールをインポート。"""
         try:
-            from src.analysis.signals import aggregate_signals
-            self.aggregate_signals = aggregate_signals
+            from src.analysis.signals import aggregate_bias
+            self.aggregate_bias = aggregate_bias
         except ImportError as exc:
             pytest.skip(f"依存関係不足のためスキップ: {exc}")
 
-    def test_majority_buy_signals_gives_buy_bias(self):
-        """買いシグナルが多数の場合、バイアスが 'buy' になることを確認する。"""
+    def test_majority_buy_signals_gives_buy(self):
+        """買いシグナルが多数の場合、'buy' が返されることを確認する。
+
+        RSI 買い + MACD 買い vs BB 売り → 買い 2 > 売り 1 → "buy"
+        """
         signals = [
             {"indicator": "RSI", "signal": "buy"},
             {"indicator": "MACD", "signal": "buy"},
             {"indicator": "Bollinger Bands", "signal": "sell"},
         ]
-        result = self.aggregate_signals(signals)
-        assert result.get("bias") == "buy", \
-            f"買い多数でバイアスは 'buy' が期待されます: {result.get('bias')}"
+        result = self.aggregate_bias(signals)
+        assert result == "buy", \
+            f"買い多数で 'buy' が期待されます: {result}"
 
-    def test_majority_sell_signals_gives_sell_bias(self):
-        """売りシグナルが多数の場合、バイアスが 'sell' になることを確認する。"""
+    def test_majority_sell_signals_gives_sell(self):
+        """売りシグナルが多数の場合、'sell' が返されることを確認する。"""
         signals = [
             {"indicator": "RSI", "signal": "sell"},
             {"indicator": "MACD", "signal": "sell"},
             {"indicator": "Stochastic", "signal": "buy"},
         ]
-        result = self.aggregate_signals(signals)
-        assert result.get("bias") == "sell", \
-            f"売り多数でバイアスは 'sell' が期待されます: {result.get('bias')}"
+        result = self.aggregate_bias(signals)
+        assert result == "sell", \
+            f"売り多数で 'sell' が期待されます: {result}"
 
-    def test_empty_signals_gives_hold_bias(self):
-        """シグナルなしの場合、バイアスが 'hold' になることを確認する。"""
-        result = self.aggregate_signals([])
-        assert result.get("bias") == "hold", \
-            f"シグナルなしでバイアスは 'hold' が期待されます: {result.get('bias')}"
+    def test_empty_signals_gives_neutral(self):
+        """シグナルなしの場合、'neutral'（方向感なし）が返されることを確認する。
 
-    def test_aggregate_result_contains_counts(self):
-        """集計結果に買い・売り件数が含まれることを確認する。"""
+        買い = 0、売り = 0 → 同数 → "neutral"
+        """
+        result = self.aggregate_bias([])
+        assert result == "neutral", \
+            f"シグナルなしで 'neutral' が期待されます: {result}"
+
+    def test_equal_buy_sell_gives_neutral(self):
+        """買い・売りが同数の場合、'neutral' が返されることを確認する。"""
         signals = [
             {"indicator": "RSI", "signal": "buy"},
             {"indicator": "MACD", "signal": "sell"},
         ]
-        result = self.aggregate_signals(signals)
-        assert "buy_count" in result or "buy" in str(result), \
-            f"集計結果には買い件数が含まれる必要があります: {result}"
+        result = self.aggregate_bias(signals)
+        assert result == "neutral", \
+            f"買い = 売り = 1 の場合 'neutral' が期待されます: {result}"
+
+    def test_returns_string(self):
+        """aggregate_bias が文字列を返すことを確認する。"""
+        signals = [{"indicator": "RSI", "signal": "buy"}]
+        result = self.aggregate_bias(signals)
+        assert isinstance(result, str), \
+            f"aggregate_bias は文字列を返す必要があります: {type(result)}"
+        assert result in ("buy", "sell", "neutral"), \
+            f"戻り値は buy / sell / neutral のいずれかが期待されます: {result}"
 
 
 class TestBacktestSignals:
