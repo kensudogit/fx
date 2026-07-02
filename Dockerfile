@@ -25,10 +25,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ .
 COPY --from=frontend-builder /app/frontend /app/frontend
 
-# 事前生成済みテストレポートを Next.js public/ へコピー
-# → Railway の公開 URL /test-report/ でブラウザから閲覧可能になる
-RUN mkdir -p /app/frontend/public/test-report && \
-    cp tests/report/test_report.html /app/frontend/public/test-report/index.html || true
+# 商用グレード HTML レポートを生成して Next.js public/ へコピー
+# results.json が存在すれば generate_report.py で美麗レポートを再生成する
+# なければコミット済みの test_report.html をそのままコピーする
+RUN pip install --no-cache-dir pytest-json-report && \
+    mkdir -p /app/frontend/public/test-report && \
+    if [ -f tests/report/results.json ]; then \
+        python generate_report.py && \
+        cp tests/report/test_report.html /app/frontend/public/test-report/index.html; \
+    else \
+        cp tests/report/test_report.html /app/frontend/public/test-report/index.html || true; \
+    fi
 
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh

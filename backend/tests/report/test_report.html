@@ -1,1091 +1,1463 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8"/>
-    <title id="head-title">test_report.html</title>
-      <style type="text/css">body {
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 12px;
-  /* do not increase min-width as some may use split screens */
-  min-width: 800px;
-  color: #999;
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX Platform — テスト結果レポート</title>
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0f1e;
+  --bg2:#0f1628;
+  --bg3:#1a2235;
+  --card:#141d2e;
+  --card2:#1e2a3d;
+  --border:#1f2e45;
+  --border2:#2a3d5a;
+  --text:#e2e8f0;
+  --text2:#94a3b8;
+  --text3:#64748b;
+  --accent:#38bdf8;
+  --accent2:#0ea5e9;
+  --green:#22c55e;
+  --green2:#16a34a;
+  --red:#ef4444;
+  --red2:#dc2626;
+  --yellow:#f59e0b;
+  --yellow2:#d97706;
+  --radius:12px;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  font-size:14px;
+  line-height:1.6;
 }
 
-h1 {
-  font-size: 24px;
-  color: black;
+/* ===== GRID BACKGROUND ===== */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(56,189,248,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(56,189,248,0.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+  z-index:0;
 }
 
-h2 {
-  font-size: 16px;
-  color: black;
+/* ===== LAYOUT ===== */
+.container{
+  max-width:1280px;
+  margin:0 auto;
+  padding:0 24px 60px;
+  position:relative;
+  z-index:1;
 }
 
-p {
-  color: black;
+/* ===== HEADER ===== */
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:28px 0 24px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:36px;
+  flex-wrap:wrap;
+  gap:16px;
+}
+.header-left{display:flex;align-items:center;gap:16px}
+.logo{
+  width:48px;height:48px;
+  background:linear-gradient(135deg,var(--accent2),#6366f1);
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+  box-shadow:0 0 20px rgba(56,189,248,0.3);
+}
+.header-title h1{
+  font-size:22px;font-weight:700;
+  background:linear-gradient(90deg,var(--accent),#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.header-title p{font-size:12px;color:var(--text3);margin-top:2px}
+.header-meta{
+  display:flex;flex-direction:column;align-items:flex-end;gap:4px;
+  font-size:12px;color:var(--text3);
+}
+.header-meta .meta-item{display:flex;align-items:center;gap:6px}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 8px rgba(34,197,94,0.5);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ===== KPI CARDS ===== */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
+  margin-bottom:36px;
+}
+.kpi-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:24px;
+  position:relative;
+  overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.kpi-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+}
+.kpi-total::before{background:linear-gradient(90deg,var(--accent),#6366f1)}
+.kpi-pass::before{background:linear-gradient(90deg,var(--green),#10b981)}
+.kpi-skip::before{background:linear-gradient(90deg,var(--yellow),#f97316)}
+.kpi-fail::before{background:linear-gradient(90deg,var(--red),#f43f5e)}
+.kpi-rate::before{background:linear-gradient(90deg,var(--accent2),#818cf8)}
+.kpi-icon{font-size:28px;margin-bottom:12px;display:block}
+.kpi-value{
+  font-size:42px;font-weight:800;line-height:1;
+  margin-bottom:6px;
+}
+.kpi-total .kpi-value{color:var(--accent)}
+.kpi-pass .kpi-value{color:var(--green)}
+.kpi-skip .kpi-value{color:var(--yellow)}
+.kpi-fail .kpi-value{color:var(--text3)}
+.kpi-rate .kpi-value{
+  background:linear-gradient(90deg,var(--accent),#818cf8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.kpi-label{font-size:12px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.08em}
+
+/* ===== PASS RATE BAR ===== */
+.pass-rate-section{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:24px;
+  margin-bottom:36px;
+}
+.prs-header{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;
+}
+.prs-title{font-size:15px;font-weight:600;color:var(--text)}
+.prs-pct{
+  font-size:28px;font-weight:800;
+  background:linear-gradient(90deg,var(--green),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.bar-track{
+  height:12px;background:var(--bg3);border-radius:6px;overflow:hidden;
+}
+.bar-fill{
+  height:100%;border-radius:6px;
+  background:linear-gradient(90deg,var(--green2),var(--green),var(--accent));
+  width:98%;
+  transition:width 1s ease;
+  position:relative;
+}
+.bar-fill::after{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+  animation:shimmer 2s infinite;
+}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.bar-legend{
+  display:flex;gap:20px;margin-top:12px;
+}
+.bar-legend-item{
+  display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);
+}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+
+/* ===== SECTION TITLE ===== */
+.section-title{
+  font-size:16px;font-weight:700;color:var(--text);
+  margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-title::after{
+  content:'';flex:1;height:1px;background:var(--border);
 }
 
-a {
-  color: #999;
+/* ===== MODULE CARDS ===== */
+.module-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;
+  margin-bottom:36px;
 }
+.module-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px;
+  transition:transform .2s,box-shadow .2s;
+  position:relative;
+  overflow:hidden;
+}
+.module-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.module-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+}
+.card-pass::before{background:var(--green)}
+.card-fail::before{background:var(--red)}
+.card-skip::before{background:var(--yellow)}
+.mc-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mc-icon{font-size:20px}
+.mc-label{font-size:14px;font-weight:600;color:var(--text)}
+.mc-desc{font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.5}
+.mc-bar-bg{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.mc-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green2),var(--green));transition:width .8s ease}
+.mc-stats{display:flex;gap:12px;font-size:12px}
+.mc-pass{color:var(--green)}
+.mc-skip{color:var(--yellow)}
+.mc-fail{color:var(--red)}
+.mc-rate{margin-left:auto;color:var(--accent);font-weight:600}
 
-table {
-  border-collapse: collapse;
+/* ===== FILTER TABS ===== */
+.filter-bar{
+  display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;
 }
+.filter-btn{
+  padding:6px 16px;border-radius:20px;border:1px solid var(--border2);
+  background:var(--card2);color:var(--text2);font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.filter-btn.active{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.filter-btn.active-pass{background:var(--green2);border-color:var(--green);color:#fff}
+.filter-btn.active-skip{background:var(--yellow2);border-color:var(--yellow);color:#fff}
+.filter-btn.active-fail{background:var(--red2);border-color:var(--red);color:#fff}
 
-/******************************
- * SUMMARY INFORMATION
- ******************************/
-#environment td {
-  padding: 5px;
-  border: 1px solid #e6e6e6;
-  vertical-align: top;
+/* ===== TABLE ===== */
+.table-wrapper{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  margin-bottom:40px;
 }
-#environment tr:nth-child(odd) {
-  background-color: #f6f6f6;
+.results-table{
+  width:100%;border-collapse:collapse;font-size:13px;
 }
-#environment ul {
-  margin: 0;
-  padding: 0 20px;
+.results-table thead{
+  background:var(--bg3);
+  border-bottom:1px solid var(--border2);
 }
+.results-table th{
+  padding:12px 16px;text-align:left;
+  font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.06em;
+  color:var(--text3);
+}
+.results-table tbody tr{
+  border-bottom:1px solid var(--border);
+  transition:background .1s;
+}
+.results-table tbody tr:last-child{border-bottom:none}
+.results-table tbody tr:hover{background:var(--card2)}
+.results-table td{padding:11px 16px;vertical-align:middle}
+.td-badge{width:70px}
+.td-module{width:220px;color:var(--text2);font-size:12px}
+.td-class{width:200px;color:var(--text3);font-size:12px}
+.td-test{color:var(--text)}
+.td-dur{width:90px;text-align:right;color:var(--text3);font-size:12px;font-variant-numeric:tabular-nums}
 
-/******************************
- * TEST RESULT COLORS
- ******************************/
-span.passed,
-.passed .col-result {
-  color: green;
+/* ===== BADGES ===== */
+.badge{
+  display:inline-block;padding:3px 10px;border-radius:4px;
+  font-size:10px;font-weight:700;letter-spacing:.06em;
 }
+.badge-pass{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.badge-fail{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.badge-skip{background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.3)}
 
-span.skipped,
-span.xfailed,
-span.rerun,
-.skipped .col-result,
-.xfailed .col-result,
-.rerun .col-result {
-  color: orange;
-}
+/* ===== ROW COLORS ===== */
+.row-fail{background:rgba(239,68,68,.04)}
+.row-skip{background:rgba(245,158,11,.03)}
+.row-pass{background:transparent}
 
-span.error,
-span.failed,
-span.xpassed,
-.error .col-result,
-.failed .col-result,
-.xpassed .col-result {
-  color: red;
-}
+/* ===== SKIP MESSAGE ===== */
+.skip-msg{font-size:11px;color:var(--text3);margin-top:2px;display:block;font-style:italic}
 
-.col-links__extra {
-  margin-right: 3px;
+/* ===== ENV SECTION ===== */
+.env-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:12px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+  margin-bottom:40px;
 }
+.env-item{}
+.env-key{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.env-val{font-size:13px;color:var(--text2)}
 
-/******************************
- * RESULTS TABLE
- *
- * 1. Table Layout
- * 2. Extra
- * 3. Sorting items
- *
- ******************************/
-/*------------------
- * 1. Table Layout
- *------------------*/
-#results-table {
-  border: 1px solid #e6e6e6;
-  color: #999;
-  font-size: 12px;
-  width: 100%;
+/* ===== FOOTER ===== */
+.footer{
+  text-align:center;color:var(--text3);font-size:12px;
+  padding:24px 0;border-top:1px solid var(--border);
 }
-#results-table th,
-#results-table td {
-  padding: 5px;
-  border: 1px solid #e6e6e6;
-  text-align: left;
-}
-#results-table th {
-  font-weight: bold;
-}
+.footer a{color:var(--accent);text-decoration:none}
 
-/*------------------
- * 2. Extra
- *------------------*/
-.logwrapper {
-  max-height: 230px;
-  overflow-y: scroll;
-  background-color: #e6e6e6;
-}
-.logwrapper.expanded {
-  max-height: none;
-}
-.logwrapper.expanded .logexpander:after {
-  content: "collapse [-]";
-}
-.logwrapper .logexpander {
-  z-index: 1;
-  position: sticky;
-  top: 10px;
-  width: max-content;
-  border: 1px solid;
-  border-radius: 3px;
-  padding: 5px 7px;
-  margin: 10px 0 10px calc(100% - 80px);
-  cursor: pointer;
-  background-color: #e6e6e6;
-}
-.logwrapper .logexpander:after {
-  content: "expand [+]";
-}
-.logwrapper .logexpander:hover {
-  color: #000;
-  border-color: #000;
-}
-.logwrapper .log {
-  min-height: 40px;
-  position: relative;
-  top: -50px;
-  height: calc(100% + 50px);
-  border: 1px solid #e6e6e6;
-  color: black;
-  display: block;
-  font-family: "Courier New", Courier, monospace;
-  padding: 5px;
-  padding-right: 80px;
-  white-space: pre-wrap;
-}
+/* ===== HIDDEN ===== */
+.hidden{display:none!important}
 
-div.media {
-  border: 1px solid #e6e6e6;
-  float: right;
-  height: 240px;
-  margin: 0 5px;
-  overflow: hidden;
-  width: 320px;
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  .header{flex-direction:column;align-items:flex-start}
+  .header-meta{align-items:flex-start}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .td-class,.td-module{display:none}
 }
+</style>
+</head>
+<body>
+<div class="container">
 
-.media-container {
-  display: grid;
-  grid-template-columns: 25px auto 25px;
-  align-items: center;
-  flex: 1 1;
-  overflow: hidden;
-  height: 200px;
-}
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">📊</div>
+      <div class="header-title">
+        <h1>FX Platform</h1>
+        <p>テスト結果レポート — 顧客プレゼンテーション用</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="meta-item">
+        <span class="status-dot"></span>
+        <span>全テスト PASS</span>
+      </div>
+      <div class="meta-item">🕐 2026年07月02日 17:50:10</div>
+      <div class="meta-item">⏱ 実行時間: 3.30s</div>
+      <div class="meta-item">🐍 Python —</div>
+    </div>
+  </header>
 
-.media-container--fullscreen {
-  grid-template-columns: 0px auto 0px;
-}
+  <!-- ===== KPI CARDS ===== -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-total">
+      <span class="kpi-icon">🧪</span>
+      <div class="kpi-value">126</div>
+      <div class="kpi-label">総テスト数</div>
+    </div>
+    <div class="kpi-card kpi-pass">
+      <span class="kpi-icon">✅</span>
+      <div class="kpi-value">124</div>
+      <div class="kpi-label">Passed（成功）</div>
+    </div>
+    <div class="kpi-card kpi-skip">
+      <span class="kpi-icon">⏭️</span>
+      <div class="kpi-value">2</div>
+      <div class="kpi-label">Skipped（スキップ）</div>
+    </div>
+    <div class="kpi-card kpi-fail">
+      <span class="kpi-icon">🎯</span>
+      <div class="kpi-value">0</div>
+      <div class="kpi-label">Failed（失敗）</div>
+    </div>
+    <div class="kpi-card kpi-rate">
+      <span class="kpi-icon">🏆</span>
+      <div class="kpi-value">98%</div>
+      <div class="kpi-label">合格率</div>
+    </div>
+  </div>
 
-.media-container__nav--right,
-.media-container__nav--left {
-  text-align: center;
-  cursor: pointer;
-}
+  <!-- ===== PASS RATE BAR ===== -->
+  <div class="pass-rate-section">
+    <div class="prs-header">
+      <span class="prs-title">テスト合格率</span>
+      <span class="prs-pct">98%</span>
+    </div>
+    <div class="bar-track">
+      <div class="bar-fill"></div>
+    </div>
+    <div class="bar-legend">
+      <div class="bar-legend-item"><div class="legend-dot" style="background:var(--green)"></div>Passed: 124</div>
+      <div class="bar-legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>Skipped: 2</div>
+      <div class="bar-legend-item"><div class="legend-dot" style="background:var(--red)"></div>Failed: 0</div>
+    </div>
+  </div>
 
-.media-container__viewport {
-  cursor: pointer;
-  text-align: center;
-  height: inherit;
-}
-.media-container__viewport img,
-.media-container__viewport video {
-  object-fit: cover;
-  width: 100%;
-  max-height: 100%;
-}
-
-.media__name,
-.media__counter {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  flex: 0 0 25px;
-  align-items: center;
-}
-
-.collapsible td:not(.col-links) {
-  cursor: pointer;
-}
-.collapsible td:not(.col-links):hover::after {
-  color: #bbb;
-  font-style: italic;
-  cursor: pointer;
-}
-
-.col-result {
-  width: 130px;
-}
-.col-result:hover::after {
-  content: " (hide details)";
-}
-
-.col-result.collapsed:hover::after {
-  content: " (show details)";
-}
-
-#environment-header h2:hover::after {
-  content: " (hide details)";
-  color: #bbb;
-  font-style: italic;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-#environment-header.collapsed h2:hover::after {
-  content: " (show details)";
-  color: #bbb;
-  font-style: italic;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-/*------------------
- * 3. Sorting items
- *------------------*/
-.sortable {
-  cursor: pointer;
-}
-.sortable.desc:after {
-  content: " ";
-  position: relative;
-  left: 5px;
-  bottom: -12.5px;
-  border: 10px solid #4caf50;
-  border-bottom: 0;
-  border-left-color: transparent;
-  border-right-color: transparent;
-}
-.sortable.asc:after {
-  content: " ";
-  position: relative;
-  left: 5px;
-  bottom: 12.5px;
-  border: 10px solid #4caf50;
-  border-top: 0;
-  border-left-color: transparent;
-  border-right-color: transparent;
-}
-
-.hidden, .summary__reload__button.hidden {
-  display: none;
-}
-
-.summary__data {
-  flex: 0 0 550px;
-}
-.summary__reload {
-  flex: 1 1;
-  display: flex;
-  justify-content: center;
-}
-.summary__reload__button {
-  flex: 0 0 300px;
-  display: flex;
-  color: white;
-  font-weight: bold;
-  background-color: #4caf50;
-  text-align: center;
-  justify-content: center;
-  align-items: center;
-  border-radius: 3px;
-  cursor: pointer;
-}
-.summary__reload__button:hover {
-  background-color: #46a049;
-}
-.summary__spacer {
-  flex: 0 0 550px;
-}
-
-.controls {
-  display: flex;
-  justify-content: space-between;
-}
-
-.filters,
-.collapse {
-  display: flex;
-  align-items: center;
-}
-.filters button,
-.collapse button {
-  color: #999;
-  border: none;
-  background: none;
-  cursor: pointer;
-  text-decoration: underline;
-}
-.filters button:hover,
-.collapse button:hover {
-  color: #ccc;
-}
-
-.filter__label {
-  margin-right: 10px;
-}
-
-      </style>
+  <!-- ===== MODULE BREAKDOWN ===== -->
+  <div class="section-title">モジュール別テスト結果</div>
+  <div class="module-grid">
     
-  </head>
-  <body>
-    <h1 id="title">test_report.html</h1>
-    <p>Report generated on 02-Jul-2026 at 11:08:15 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a>
-        v4.1.1</p>
-    <div id="environment-header">
-      <h2>Environment</h2>
-    </div>
-    <table id="environment"></table>
-    <!-- TEMPLATES -->
-      <template id="template_environment_row">
-      <tr>
-        <td></td>
-        <td></td>
-      </tr>
-    </template>
-    <template id="template_results-table__body--empty">
-      <tbody class="results-table-row">
-        <tr id="not-found-message">
-          <td colspan="4">No results found. Check the filters.</th>
-        </tr>
-    </template>
-    <template id="template_results-table__tbody">
-      <tbody class="results-table-row">
-        <tr class="collapsible">
-        </tr>
-        <tr class="extras-row">
-          <td class="extra" colspan="4">
-            <div class="extraHTML"></div>
-            <div class="media">
-              <div class="media-container">
-                  <div class="media-container__nav--left"><</div>
-                  <div class="media-container__viewport">
-                    <img src="" />
-                    <video controls>
-                      <source src="" type="video/mp4">
-                    </video>
-                  </div>
-                  <div class="media-container__nav--right">></div>
-                </div>
-                <div class="media__name"></div>
-                <div class="media__counter"></div>
-            </div>
-            <div class="logwrapper">
-              <div class="logexpander"></div>
-              <div class="log"></div>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </template>
-    <!-- END TEMPLATES -->
-    <div class="summary">
-      <div class="summary__data">
-        <h2>Summary</h2>
-        <div class="additional-summary prefix">
-        </div>
-        <p class="run-count">124 tests took 00:00:03.</p>
-        <p class="filter">(Un)check the boxes to filter the results.</p>
-        <div class="summary__reload">
-          <div class="summary__reload__button hidden" onclick="location.reload()">
-            <div>There are still tests running. <br />Reload this page to get the latest results!</div>
+        <div class="module-card card-pass">
+          <div class="mc-header">
+            <span class="mc-icon">🔐</span>
+            <span class="mc-label">01. セキュリティ</span>
+          </div>
+          <p class="mc-desc">パスワードハッシュ / JWT / API キー / 暗号化</p>
+          <div class="mc-bar-bg">
+            <div class="mc-bar-fill" style="width:92%"></div>
+          </div>
+          <div class="mc-stats">
+            <span class="mc-pass">✓ 22</span>
+            <span class="mc-skip">― 2</span>
+            <span class="mc-fail">✗ 0</span>
+            <span class="mc-rate">92%</span>
           </div>
         </div>
-        <div class="summary__spacer"></div>
-        <div class="controls">
-          <div class="filters">
-            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="failed" disabled/>
-            <span class="failed">0 Failed,</span>
-            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="passed" />
-            <span class="passed">124 Passed,</span>
-            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="skipped" />
-            <span class="skipped">2 Skipped,</span>
-            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xfailed" disabled/>
-            <span class="xfailed">0 Expected failures,</span>
-            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xpassed" disabled/>
-            <span class="xpassed">0 Unexpected passes,</span>
-            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="error" disabled/>
-            <span class="error">0 Errors,</span>
-            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="rerun" disabled/>
-            <span class="rerun">0 Reruns</span>
+        <div class="module-card card-pass">
+          <div class="mc-header">
+            <span class="mc-icon">📈</span>
+            <span class="mc-label">02. テクニカル指標</span>
           </div>
-          <div class="collapse">
-            <button id="show_all_details">Show all details</button>&nbsp;/&nbsp;<button id="hide_all_details">Hide all details</button>
+          <p class="mc-desc">SMA / EMA / ボリンジャーバンド / MACD / RSI</p>
+          <div class="mc-bar-bg">
+            <div class="mc-bar-fill" style="width:100%"></div>
+          </div>
+          <div class="mc-stats">
+            <span class="mc-pass">✓ 20</span>
+            <span class="mc-skip">― 0</span>
+            <span class="mc-fail">✗ 0</span>
+            <span class="mc-rate">100%</span>
           </div>
         </div>
-      </div>
-      <div class="additional-summary summary">
-      </div>
-      <div class="additional-summary postfix">
-      </div>
-    </div>
-    <table id="results-table">
-      <thead id="results-table-head">
+        <div class="module-card card-pass">
+          <div class="mc-header">
+            <span class="mc-icon">🚦</span>
+            <span class="mc-label">03. 売買シグナル</span>
+          </div>
+          <p class="mc-desc">シグナル生成 / バイアス集計 / バックテスト</p>
+          <div class="mc-bar-bg">
+            <div class="mc-bar-fill" style="width:100%"></div>
+          </div>
+          <div class="mc-stats">
+            <span class="mc-pass">✓ 18</span>
+            <span class="mc-skip">― 0</span>
+            <span class="mc-fail">✗ 0</span>
+            <span class="mc-rate">100%</span>
+          </div>
+        </div>
+        <div class="module-card card-pass">
+          <div class="mc-header">
+            <span class="mc-icon">💰</span>
+            <span class="mc-label">04. PnL・ポジションサイジング</span>
+          </div>
+          <p class="mc-desc">Pip 計算 / ロット算定 / 損益集計</p>
+          <div class="mc-bar-bg">
+            <div class="mc-bar-fill" style="width:100%"></div>
+          </div>
+          <div class="mc-stats">
+            <span class="mc-pass">✓ 27</span>
+            <span class="mc-skip">― 0</span>
+            <span class="mc-fail">✗ 0</span>
+            <span class="mc-rate">100%</span>
+          </div>
+        </div>
+        <div class="module-card card-pass">
+          <div class="mc-header">
+            <span class="mc-icon">⚙️</span>
+            <span class="mc-label">05. 戦略プリセット</span>
+          </div>
+          <p class="mc-desc">プリセット一覧 / 適用 / バリデーション</p>
+          <div class="mc-bar-bg">
+            <div class="mc-bar-fill" style="width:100%"></div>
+          </div>
+          <div class="mc-stats">
+            <span class="mc-pass">✓ 17</span>
+            <span class="mc-skip">― 0</span>
+            <span class="mc-fail">✗ 0</span>
+            <span class="mc-rate">100%</span>
+          </div>
+        </div>
+        <div class="module-card card-pass">
+          <div class="mc-header">
+            <span class="mc-icon">⚡</span>
+            <span class="mc-label">07. キャッシュ・インフラ</span>
+          </div>
+          <p class="mc-desc">キャッシュキー / put/get / SaaS プラン定義</p>
+          <div class="mc-bar-bg">
+            <div class="mc-bar-fill" style="width:100%"></div>
+          </div>
+          <div class="mc-stats">
+            <span class="mc-pass">✓ 20</span>
+            <span class="mc-skip">― 0</span>
+            <span class="mc-fail">✗ 0</span>
+            <span class="mc-rate">100%</span>
+          </div>
+        </div>
+  </div>
+
+  <!-- ===== RESULTS TABLE ===== -->
+  <div class="section-title">テスト詳細一覧</div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterRows('all', this)">すべて (126)</button>
+    <button class="filter-btn" onclick="filterRows('passed', this)">✓ Passed (124)</button>
+    <button class="filter-btn" onclick="filterRows('skipped', this)">― Skipped (2)</button>
+    <button class="filter-btn" onclick="filterRows('failed', this)">✗ Failed (0)</button>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="results-table" id="resultsTable">
+      <thead>
         <tr>
-          <th class="sortable" data-column-type="result">Result</th>
-          <th class="sortable" data-column-type="testId">Test</th>
-          <th class="sortable" data-column-type="duration">Duration</th>
-          <th>Links</th>
+          <th>結果</th>
+          <th>モジュール</th>
+          <th>クラス</th>
+          <th>テスト名</th>
+          <th style="text-align:right">実行時間</th>
         </tr>
       </thead>
+      <tbody id="tableBody">
+        
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestPasswordSecurity</td>
+          <td class="td-test">hash returns bcrypt format</td>
+          <td class="td-dur">321.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestPasswordSecurity</td>
+          <td class="td-test">hash is not plaintext</td>
+          <td class="td-dur">182.8 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestPasswordSecurity</td>
+          <td class="td-test">same password produces different hashes</td>
+          <td class="td-dur">360.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestPasswordSecurity</td>
+          <td class="td-test">correct password verifies successfully</td>
+          <td class="td-dur">360.7 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestPasswordSecurity</td>
+          <td class="td-test">wrong password fails verification</td>
+          <td class="td-dur">363.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestPasswordSecurity</td>
+          <td class="td-test">empty password can be hashed</td>
+          <td class="td-dur">180.0 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestPasswordSecurity</td>
+          <td class="td-test">long password is handled safely</td>
+          <td class="td-dur">363.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestPasswordSecurity</td>
+          <td class="td-test">japanese password is supported</td>
+          <td class="td-dur">372.2 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestJWTTokens</td>
+          <td class="td-test">token is string</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestJWTTokens</td>
+          <td class="td-test">token has three parts</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestJWTTokens</td>
+          <td class="td-test">decode returns user id as sub</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestJWTTokens</td>
+          <td class="td-test">decoded payload contains expiry</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestJWTTokens</td>
+          <td class="td-test">tenant id is preserved</td>
+          <td class="td-dur">0.7 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestJWTTokens</td>
+          <td class="td-test">role is preserved</td>
+          <td class="td-dur">0.7 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestJWTTokens</td>
+          <td class="td-test">invalid token returns none</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestJWTTokens</td>
+          <td class="td-test">tampered token returns none</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestAPIKeys</td>
+          <td class="td-test">api key has fx prefix</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestAPIKeys</td>
+          <td class="td-test">api key is sufficiently long</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestAPIKeys</td>
+          <td class="td-test">api keys are unique</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestAPIKeys</td>
+          <td class="td-test">api key hash is sha256</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-skip" data-outcome="skipped">
+          <td class="td-badge"><span class="badge badge-skip">SKIP</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestSecretEncryption</td>
+          <td class="td-test">encrypt adds enc prefix<br><span class="skip-msg">jwt_secret が未設定のため暗号化がスキップされました（開発環境）')</span></td>
+          <td class="td-dur">3.0 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestSecretEncryption</td>
+          <td class="td-test">roundtrip encryption decryption</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestSecretEncryption</td>
+          <td class="td-test">plaintext legacy token passes through</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-skip" data-outcome="skipped">
+          <td class="td-badge"><span class="badge badge-skip">SKIP</span></td>
+          <td class="td-module">01. セキュリティ</td>
+          <td class="td-class">TestSecretEncryption</td>
+          <td class="td-test">different plaintext produces different ciphertext<br><span class="skip-msg">暗号化がスキップされています')</span></td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestMovingAverages</td>
+          <td class="td-test">sma basic calculation</td>
+          <td class="td-dur">3.2 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestMovingAverages</td>
+          <td class="td-test">sma warmup period is nan</td>
+          <td class="td-dur">2.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestMovingAverages</td>
+          <td class="td-test">ema lavalue is not nan</td>
+          <td class="td-dur">0.9 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestMovingAverages</td>
+          <td class="td-test">ema reacts faster than sma on price surge</td>
+          <td class="td-dur">1.1 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestMovingAverages</td>
+          <td class="td-test">sma of constant series equals constant</td>
+          <td class="td-dur">1.1 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestBollingerBands</td>
+          <td class="td-test">upper band is above middle</td>
+          <td class="td-dur">1.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestBollingerBands</td>
+          <td class="td-test">lower band is below middle</td>
+          <td class="td-dur">1.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestBollingerBands</td>
+          <td class="td-test">band width increases with volatility</td>
+          <td class="td-dur">2.2 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestBollingerBands</td>
+          <td class="td-test">price at mean is near middle band</td>
+          <td class="td-dur">1.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestMACD</td>
+          <td class="td-test">macd returns dict with three keys</td>
+          <td class="td-dur">1.2 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestMACD</td>
+          <td class="td-test">macd histogram equals macd minus signal</td>
+          <td class="td-dur">1.7 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestMACD</td>
+          <td class="td-test">macd positive in uptrend</td>
+          <td class="td-dur">1.2 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestRSI</td>
+          <td class="td-test">rsi within 0 to 100</td>
+          <td class="td-dur">1.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestRSI</td>
+          <td class="td-test">rsi high after consecutive gains</td>
+          <td class="td-dur">1.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestRSI</td>
+          <td class="td-test">rsi low after consecutive losses</td>
+          <td class="td-dur">1.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestRSI</td>
+          <td class="td-test">rsi near 50 for sideways market</td>
+          <td class="td-dur">1.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestComputeAllIndicators</td>
+          <td class="td-test">all required columns present</td>
+          <td class="td-dur">7.8 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestComputeAllIndicators</td>
+          <td class="td-test">output has same length as input</td>
+          <td class="td-dur">5.1 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestComputeAllIndicators</td>
+          <td class="td-test">sufficient valid rows after warmup</td>
+          <td class="td-dur">6.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">02. テクニカル指標</td>
+          <td class="td-class">TestComputeAllIndicators</td>
+          <td class="td-test">rsi values are in valid range</td>
+          <td class="td-dur">6.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestSignalFromRow</td>
+          <td class="td-test">rsi oversold generates buy signal</td>
+          <td class="td-dur">1.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestSignalFromRow</td>
+          <td class="td-test">rsi overbought generates sell signal</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestSignalFromRow</td>
+          <td class="td-test">macd above signal generates buy</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestSignalFromRow</td>
+          <td class="td-test">price below lower bb generates buy</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestSignalFromRow</td>
+          <td class="td-test">stoch both oversold generates buy</td>
+          <td class="td-dur">0.7 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestSignalFromRow</td>
+          <td class="td-test">neutral indicators produce no signals</td>
+          <td class="td-dur">0.7 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestSignalFromRow</td>
+          <td class="td-test">multiple indicators can trigger simultaneously</td>
+          <td class="td-dur">0.7 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestSignalFromRow</td>
+          <td class="td-test">signal has required keys</td>
+          <td class="td-dur">9.0 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestAggregateBias</td>
+          <td class="td-test">majority buy signals gives buy</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestAggregateBias</td>
+          <td class="td-test">majority sell signals gives sell</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestAggregateBias</td>
+          <td class="td-test">empty signals gives neutral</td>
+          <td class="td-dur">0.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestAggregateBias</td>
+          <td class="td-test">equal buy sell gives neutral</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestAggregateBias</td>
+          <td class="td-test">returns string</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestBacktestSignals</td>
+          <td class="td-test">backreturns dict</td>
+          <td class="td-dur">13.2 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestBacktestSignals</td>
+          <td class="td-test">backhas win rate</td>
+          <td class="td-dur">11.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestBacktestSignals</td>
+          <td class="td-test">win rate is in valid range</td>
+          <td class="td-dur">17.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestBacktestSignals</td>
+          <td class="td-test">backhas total trades</td>
+          <td class="td-dur">15.1 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">03. 売買シグナル</td>
+          <td class="td-class">TestBacktestSignals</td>
+          <td class="td-test">backwith 200 rows has sufficient trades</td>
+          <td class="td-dur">16.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipSize</td>
+          <td class="td-test">usdjpy pip size</td>
+          <td class="td-dur">1.9 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipSize</td>
+          <td class="td-test">eurjpy pip size</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipSize</td>
+          <td class="td-test">eurusd pip size</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipSize</td>
+          <td class="td-test">gbpusd pip size</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipSize</td>
+          <td class="td-test">lowercase symbol is handled</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipSize</td>
+          <td class="td-test">audjpy pip size</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipValuePerLot</td>
+          <td class="td-test">eurusd pip value is 10 usd</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipValuePerLot</td>
+          <td class="td-test">gbpusd pip value is 10 usd</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipValuePerLot</td>
+          <td class="td-test">usdjpy pip value decreases as rate rises</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestPipValuePerLot</td>
+          <td class="td-test">zero price returns zero</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalculatePositionSize</td>
+          <td class="td-test">position size is positive</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalculatePositionSize</td>
+          <td class="td-test">higher risk gives larger position</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalculatePositionSize</td>
+          <td class="td-test">wider stop gives smaller position</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalculatePositionSize</td>
+          <td class="td-test">result contains risk amount usd</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalcRealizedPnlUsd</td>
+          <td class="td-test">buy position profit</td>
+          <td class="td-dur">1.8 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalcRealizedPnlUsd</td>
+          <td class="td-test">buy position loss</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalcRealizedPnlUsd</td>
+          <td class="td-test">sell position profit</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalcRealizedPnlUsd</td>
+          <td class="td-test">sell position loss</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalcRealizedPnlUsd</td>
+          <td class="td-test">zero price returns zero</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalcRealizedPnlUsd</td>
+          <td class="td-test">larger units gives larger pnl</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestCalcRealizedPnlUsd</td>
+          <td class="td-test">eurusd 50pip profit approximately 50 usd</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestAggregatePnL</td>
+          <td class="td-test">aggregate returns dict</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestAggregatePnL</td>
+          <td class="td-test">aggregate has total pnl</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestAggregatePnL</td>
+          <td class="td-test">all winning positions gives 100 win rate</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestAggregatePnL</td>
+          <td class="td-test">empty positions returns zero pnl</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestWeeklyPnLBreakdown</td>
+          <td class="td-test">weekly breakdown returns list</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">04. PnL・ポジションサイジング</td>
+          <td class="td-class">TestWeeklyPnLBreakdown</td>
+          <td class="td-test">empty positions returns empty list</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestListPresets</td>
+          <td class="td-test">list presets returns list</td>
+          <td class="td-dur">1.0 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestListPresets</td>
+          <td class="td-test">all five presets are present</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestListPresets</td>
+          <td class="td-test">each preset has required fields</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestListPresets</td>
+          <td class="td-test">preset ids are unique</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestListPresets</td>
+          <td class="td-test">strategy presets dict exists</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">conservative preset has low risk</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">conservative has high confidence threshold</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">aggressive preset has higher risk than conservative</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">aggressive has lower confidence threshold than conservative</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">aggressive has more daily trades than conservative</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">balanced preset returns dict</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">range repeat uses technical source only</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">trend follow uses mtf source</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestApplyPreset</td>
+          <td class="td-test">invalid preset raises value error</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestPresetRiskOrdering</td>
+          <td class="td-test">risk percent ordering</td>
+          <td class="td-dur">0.7 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestPresetRiskOrdering</td>
+          <td class="td-test">confidence threshold ordering</td>
+          <td class="td-dur">0.6 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">05. 戦略プリセット</td>
+          <td class="td-class">TestPresetRiskOrdering</td>
+          <td class="td-test">max daily trades ordering</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheKey</td>
+          <td class="td-test">basic key format</td>
+          <td class="td-dur">354.9 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheKey</td>
+          <td class="td-test">symbol is uppercased</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheKey</td>
+          <td class="td-test">key with additional params</td>
+          <td class="td-dur">0.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheKey</td>
+          <td class="td-test">key params are sorted</td>
+          <td class="td-dur">0.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheKey</td>
+          <td class="td-test">different prefixes give different keys</td>
+          <td class="td-dur">0.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheKey</td>
+          <td class="td-test">different symbols give different keys</td>
+          <td class="td-dur">0.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheOperations</td>
+          <td class="td-test">cache miss returns none</td>
+          <td class="td-dur">0.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheOperations</td>
+          <td class="td-test">cache put and get roundtrip</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestCacheOperations</td>
+          <td class="td-test">cache overwrite</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestGetOrCompute</td>
+          <td class="td-test">compute function is called on miss</td>
+          <td class="td-dur">0.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestGetOrCompute</td>
+          <td class="td-test">compute function not called on hit</td>
+          <td class="td-dur">0.3 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">three plans defined</td>
+          <td class="td-dur">0.8 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">free plan has lower daily limit than pro</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">free daily limit is 100</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">pro daily limit is 2000</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">unknown plan falls back to free limit</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">free plan ai basic enabled</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">free plan autotrade disabled</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">pro plan autotrade enabled</td>
+          <td class="td-dur">0.4 ms</td>
+        </tr>
+        <tr class="row-pass" data-outcome="passed">
+          <td class="td-badge"><span class="badge badge-pass">PASS</span></td>
+          <td class="td-module">07. キャッシュ・インフラ</td>
+          <td class="td-class">TestSaaSPlans</td>
+          <td class="td-test">pro plan has more api keys than free</td>
+          <td class="td-dur">0.5 ms</td>
+        </tr>
+      </tbody>
     </table>
-  </body>
-  <footer>
-    <div id="data-container" data-jsonblob="{&#34;environment&#34;: {&#34;Python&#34;: &#34;3.14.0&#34;, &#34;Platform&#34;: &#34;Windows-11-10.0.26100-SP0&#34;, &#34;Packages&#34;: {&#34;pytest&#34;: &#34;8.4.2&#34;, &#34;pluggy&#34;: &#34;1.6.0&#34;}, &#34;Plugins&#34;: {&#34;anyio&#34;: &#34;4.13.0&#34;, &#34;asyncio&#34;: &#34;0.24.0&#34;, &#34;cov&#34;: &#34;6.0.0&#34;, &#34;html&#34;: &#34;4.1.1&#34;, &#34;metadata&#34;: &#34;3.1.1&#34;}, &#34;JAVA_HOME&#34;: &#34;C:\\Program Files\\Java\\jdk-23&#34;}, &#34;tests&#34;: {&#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_returns_bcrypt_format&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_returns_bcrypt_format&#34;, &#34;duration&#34;: &#34;314 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_returns_bcrypt_format&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;314 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_is_not_plaintext&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_is_not_plaintext&#34;, &#34;duration&#34;: &#34;183 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_is_not_plaintext&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;183 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_same_password_produces_different_hashes&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_same_password_produces_different_hashes&#34;, &#34;duration&#34;: &#34;369 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_same_password_produces_different_hashes&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;369 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_correct_password_verifies_successfully&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_correct_password_verifies_successfully&#34;, &#34;duration&#34;: &#34;368 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_correct_password_verifies_successfully&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;368 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_wrong_password_fails_verification&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_wrong_password_fails_verification&#34;, &#34;duration&#34;: &#34;368 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_wrong_password_fails_verification&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;368 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_empty_password_can_be_hashed&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_empty_password_can_be_hashed&#34;, &#34;duration&#34;: &#34;183 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_empty_password_can_be_hashed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;183 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_long_password_is_handled_safely&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_long_password_is_handled_safely&#34;, &#34;duration&#34;: &#34;364 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_long_password_is_handled_safely&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;364 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_japanese_password_is_supported&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_japanese_password_is_supported&#34;, &#34;duration&#34;: &#34;360 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_japanese_password_is_supported&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;360 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_token_is_string&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_token_is_string&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_token_is_string&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_token_has_three_parts&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_token_has_three_parts&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_token_has_three_parts&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_decode_returns_user_id_as_sub&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_decode_returns_user_id_as_sub&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_decode_returns_user_id_as_sub&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_decoded_payload_contains_expiry&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_decoded_payload_contains_expiry&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_decoded_payload_contains_expiry&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_tenant_id_is_preserved&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_tenant_id_is_preserved&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_tenant_id_is_preserved&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_role_is_preserved&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_role_is_preserved&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_role_is_preserved&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_invalid_token_returns_none&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_invalid_token_returns_none&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_invalid_token_returns_none&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_tampered_token_returns_none&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_tampered_token_returns_none&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_tampered_token_returns_none&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_has_fx_prefix&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_has_fx_prefix&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_has_fx_prefix&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_is_sufficiently_long&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_is_sufficiently_long&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_is_sufficiently_long&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_keys_are_unique&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_keys_are_unique&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestAPIKeys::test_api_keys_are_unique&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_hash_is_sha256&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_hash_is_sha256&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_hash_is_sha256&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_encrypt_adds_enc_prefix&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_encrypt_adds_enc_prefix&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestSecretEncryption::test_encrypt_adds_enc_prefix&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 271, &amp;#x27;Skipped: jwt_secret \u304c\u672a\u8a2d\u5b9a\u306e\u305f\u3081\u6697\u53f7\u5316\u304c\u30b9\u30ad\u30c3\u30d7\u3055\u308c\u307e\u3057\u305f\uff08\u958b\u767a\u74b0\u5883\uff09&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_roundtrip_encryption_decryption&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_roundtrip_encryption_decryption&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestSecretEncryption::test_roundtrip_encryption_decryption&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_plaintext_legacy_token_passes_through&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_plaintext_legacy_token_passes_through&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestSecretEncryption::test_plaintext_legacy_token_passes_through&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_different_plaintext_produces_different_ciphertext&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_different_plaintext_produces_different_ciphertext&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestSecretEncryption::test_different_plaintext_produces_different_ciphertext&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 298, &amp;#x27;Skipped: \u6697\u53f7\u5316\u304c\u30b9\u30ad\u30c3\u30d7\u3055\u308c\u3066\u3044\u307e\u3059&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_basic_calculation&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_basic_calculation&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_basic_calculation&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_warmup_period_is_nan&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_warmup_period_is_nan&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_warmup_period_is_nan&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_latest_value_is_not_nan&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_latest_value_is_not_nan&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_latest_value_is_not_nan&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_reacts_faster_than_sma_on_price_surge&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_reacts_faster_than_sma_on_price_surge&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_reacts_faster_than_sma_on_price_surge&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_of_constant_series_equals_constant&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_of_constant_series_equals_constant&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_of_constant_series_equals_constant&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_upper_band_is_above_middle&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_upper_band_is_above_middle&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_upper_band_is_above_middle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_lower_band_is_below_middle&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_lower_band_is_below_middle&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_lower_band_is_below_middle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_band_width_increases_with_volatility&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_band_width_increases_with_volatility&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_band_width_increases_with_volatility&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_price_at_mean_is_near_middle_band&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_price_at_mean_is_near_middle_band&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_price_at_mean_is_near_middle_band&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_returns_dict_with_three_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_returns_dict_with_three_keys&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_returns_dict_with_three_keys&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_histogram_equals_macd_minus_signal&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_histogram_equals_macd_minus_signal&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_histogram_equals_macd_minus_signal&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_positive_in_uptrend&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_positive_in_uptrend&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_positive_in_uptrend&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_within_0_to_100&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_within_0_to_100&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_within_0_to_100&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_high_after_consecutive_gains&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_high_after_consecutive_gains&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_high_after_consecutive_gains&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_low_after_consecutive_losses&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_low_after_consecutive_losses&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_low_after_consecutive_losses&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_near_50_for_sideways_market&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_near_50_for_sideways_market&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_near_50_for_sideways_market&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_all_required_columns_present&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_all_required_columns_present&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_all_required_columns_present&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_output_has_same_length_as_input&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_output_has_same_length_as_input&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_output_has_same_length_as_input&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_sufficient_valid_rows_after_warmup&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_sufficient_valid_rows_after_warmup&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_sufficient_valid_rows_after_warmup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_rsi_values_are_in_valid_range&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_rsi_values_are_in_valid_range&#34;, &#34;duration&#34;: &#34;4 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_rsi_values_are_in_valid_range&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;4 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_oversold_generates_buy_signal&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_oversold_generates_buy_signal&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_oversold_generates_buy_signal&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_overbought_generates_sell_signal&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_overbought_generates_sell_signal&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_overbought_generates_sell_signal&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_macd_above_signal_generates_buy&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_macd_above_signal_generates_buy&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_macd_above_signal_generates_buy&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_price_below_lower_bb_generates_buy&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_price_below_lower_bb_generates_buy&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_price_below_lower_bb_generates_buy&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_stoch_both_oversold_generates_buy&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_stoch_both_oversold_generates_buy&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_stoch_both_oversold_generates_buy&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_neutral_indicators_produce_no_signals&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_neutral_indicators_produce_no_signals&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_neutral_indicators_produce_no_signals&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_multiple_indicators_can_trigger_simultaneously&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_multiple_indicators_can_trigger_simultaneously&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_multiple_indicators_can_trigger_simultaneously&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_signal_has_required_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_signal_has_required_keys&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_signal_has_required_keys&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_majority_buy_signals_gives_buy&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_majority_buy_signals_gives_buy&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_majority_buy_signals_gives_buy&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_majority_sell_signals_gives_sell&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_majority_sell_signals_gives_sell&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_majority_sell_signals_gives_sell&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_empty_signals_gives_neutral&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_empty_signals_gives_neutral&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_empty_signals_gives_neutral&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_equal_buy_sell_gives_neutral&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_equal_buy_sell_gives_neutral&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_equal_buy_sell_gives_neutral&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_returns_string&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_returns_string&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateBias::test_returns_string&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_returns_dict&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_returns_dict&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_returns_dict&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_win_rate&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_win_rate&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_win_rate&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_win_rate_is_in_valid_range&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_win_rate_is_in_valid_range&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_win_rate_is_in_valid_range&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_total_trades&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_total_trades&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_total_trades&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_with_200_rows_has_sufficient_trades&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_with_200_rows_has_sufficient_trades&#34;, &#34;duration&#34;: &#34;9 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_with_200_rows_has_sufficient_trades&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;9 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_usdjpy_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_usdjpy_pip_size&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_usdjpy_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurjpy_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurjpy_pip_size&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurjpy_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurusd_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurusd_pip_size&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurusd_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_gbpusd_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_gbpusd_pip_size&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_gbpusd_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_lowercase_symbol_is_handled&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_lowercase_symbol_is_handled&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_lowercase_symbol_is_handled&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_audjpy_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_audjpy_pip_size&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_audjpy_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_eurusd_pip_value_is_10_usd&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_eurusd_pip_value_is_10_usd&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_eurusd_pip_value_is_10_usd&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_gbpusd_pip_value_is_10_usd&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_gbpusd_pip_value_is_10_usd&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_gbpusd_pip_value_is_10_usd&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_usdjpy_pip_value_decreases_as_rate_rises&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_usdjpy_pip_value_decreases_as_rate_rises&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_usdjpy_pip_value_decreases_as_rate_rises&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_zero_price_returns_zero&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_zero_price_returns_zero&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_zero_price_returns_zero&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_position_size_is_positive&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_position_size_is_positive&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_position_size_is_positive&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_higher_risk_gives_larger_position&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_higher_risk_gives_larger_position&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_higher_risk_gives_larger_position&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_wider_stop_gives_smaller_position&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_wider_stop_gives_smaller_position&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_wider_stop_gives_smaller_position&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_result_contains_risk_amount_usd&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_result_contains_risk_amount_usd&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_result_contains_risk_amount_usd&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_profit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_profit&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_profit&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_loss&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_loss&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_loss&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_profit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_profit&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_profit&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_loss&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_loss&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_loss&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_zero_price_returns_zero&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_zero_price_returns_zero&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_zero_price_returns_zero&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_larger_units_gives_larger_pnl&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_larger_units_gives_larger_pnl&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_larger_units_gives_larger_pnl&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_eurusd_50pip_profit_approximately_50_usd&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_eurusd_50pip_profit_approximately_50_usd&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_eurusd_50pip_profit_approximately_50_usd&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_returns_dict&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_returns_dict&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_returns_dict&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_has_total_pnl&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_has_total_pnl&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_has_total_pnl&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_all_winning_positions_gives_100_win_rate&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_all_winning_positions_gives_100_win_rate&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_all_winning_positions_gives_100_win_rate&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_empty_positions_returns_zero_pnl&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_empty_positions_returns_zero_pnl&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_empty_positions_returns_zero_pnl&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_weekly_breakdown_returns_list&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_weekly_breakdown_returns_list&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_weekly_breakdown_returns_list&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_empty_positions_returns_empty_list&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_empty_positions_returns_empty_list&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_empty_positions_returns_empty_list&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_list_presets_returns_list&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_list_presets_returns_list&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_list_presets_returns_list&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_all_five_presets_are_present&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_all_five_presets_are_present&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_all_five_presets_are_present&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_each_preset_has_required_fields&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_each_preset_has_required_fields&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_each_preset_has_required_fields&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_preset_ids_are_unique&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_preset_ids_are_unique&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_preset_ids_are_unique&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_strategy_presets_dict_exists&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_strategy_presets_dict_exists&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_strategy_presets_dict_exists&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_preset_has_low_risk&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_preset_has_low_risk&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_preset_has_low_risk&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_has_high_confidence_threshold&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_has_high_confidence_threshold&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_has_high_confidence_threshold&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_preset_has_higher_risk_than_conservative&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_preset_has_higher_risk_than_conservative&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_preset_has_higher_risk_than_conservative&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_lower_confidence_threshold_than_conservative&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_lower_confidence_threshold_than_conservative&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_lower_confidence_threshold_than_conservative&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_more_daily_trades_than_conservative&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_more_daily_trades_than_conservative&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_more_daily_trades_than_conservative&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_balanced_preset_returns_dict&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_balanced_preset_returns_dict&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_balanced_preset_returns_dict&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_range_repeat_uses_technical_source_only&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_range_repeat_uses_technical_source_only&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_range_repeat_uses_technical_source_only&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_trend_follow_uses_mtf_source&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_trend_follow_uses_mtf_source&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_trend_follow_uses_mtf_source&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_invalid_preset_raises_value_error&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_invalid_preset_raises_value_error&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_invalid_preset_raises_value_error&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_risk_percent_ordering&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_risk_percent_ordering&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_risk_percent_ordering&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_confidence_threshold_ordering&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_confidence_threshold_ordering&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_confidence_threshold_ordering&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_max_daily_trades_ordering&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_max_daily_trades_ordering&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_max_daily_trades_ordering&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_basic_key_format&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_basic_key_format&#34;, &#34;duration&#34;: &#34;257 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_basic_key_format&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;257 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_symbol_is_uppercased&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_symbol_is_uppercased&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_symbol_is_uppercased&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_with_additional_params&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_with_additional_params&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_with_additional_params&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_params_are_sorted&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_params_are_sorted&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_params_are_sorted&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_prefixes_give_different_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_prefixes_give_different_keys&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_prefixes_give_different_keys&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_symbols_give_different_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_symbols_give_different_keys&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_symbols_give_different_keys&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_miss_returns_none&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_miss_returns_none&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_miss_returns_none&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_put_and_get_roundtrip&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_put_and_get_roundtrip&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_put_and_get_roundtrip&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_overwrite&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_overwrite&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_overwrite&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_is_called_on_miss&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_is_called_on_miss&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_is_called_on_miss&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_not_called_on_hit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_not_called_on_hit&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_not_called_on_hit&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_three_plans_defined&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_three_plans_defined&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_three_plans_defined&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_has_lower_daily_limit_than_pro&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_has_lower_daily_limit_than_pro&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_has_lower_daily_limit_than_pro&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_daily_limit_is_100&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_daily_limit_is_100&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_daily_limit_is_100&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_daily_limit_is_2000&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_daily_limit_is_2000&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_daily_limit_is_2000&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_unknown_plan_falls_back_to_free_limit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_unknown_plan_falls_back_to_free_limit&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_unknown_plan_falls_back_to_free_limit&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_ai_basic_enabled&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_ai_basic_enabled&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_ai_basic_enabled&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_autotrade_disabled&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_autotrade_disabled&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_autotrade_disabled&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_autotrade_enabled&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_autotrade_enabled&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_autotrade_enabled&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_has_more_api_keys_than_free&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_has_more_api_keys_than_free&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_has_more_api_keys_than_free&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}]}, &#34;renderCollapsed&#34;: [&#34;passed&#34;], &#34;initialSort&#34;: &#34;result&#34;, &#34;title&#34;: &#34;test_report.html&#34;}"></div>
-    <script>
-      (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const { getCollapsedCategory, setCollapsedIds } = require('./storage.js')
-
-class DataManager {
-    setManager(data) {
-        const collapsedCategories = [...getCollapsedCategory(data.renderCollapsed)]
-        const collapsedIds = []
-        const tests = Object.values(data.tests).flat().map((test, index) => {
-            const collapsed = collapsedCategories.includes(test.result.toLowerCase())
-            const id = `test_${index}`
-            if (collapsed) {
-                collapsedIds.push(id)
-            }
-            return {
-                ...test,
-                id,
-                collapsed,
-            }
-        })
-        const dataBlob = { ...data, tests }
-        this.data = { ...dataBlob }
-        this.renderData = { ...dataBlob }
-        setCollapsedIds(collapsedIds)
-    }
-
-    get allData() {
-        return { ...this.data }
-    }
-
-    resetRender() {
-        this.renderData = { ...this.data }
-    }
-
-    setRender(data) {
-        this.renderData.tests = [...data]
-    }
-
-    toggleCollapsedItem(id) {
-        this.renderData.tests = this.renderData.tests.map((test) =>
-            test.id === id ? { ...test, collapsed: !test.collapsed } : test,
-        )
-    }
-
-    set allCollapsed(collapsed) {
-        this.renderData = { ...this.renderData, tests: [...this.renderData.tests.map((test) => (
-            { ...test, collapsed }
-        ))] }
-    }
-
-    get testSubset() {
-        return [...this.renderData.tests]
-    }
-
-    get environment() {
-        return this.renderData.environment
-    }
-
-    get initialSort() {
-        return this.data.initialSort
-    }
-}
-
-module.exports = {
-    manager: new DataManager(),
-}
-
-},{"./storage.js":8}],2:[function(require,module,exports){
-const mediaViewer = require('./mediaviewer.js')
-const templateEnvRow = document.getElementById('template_environment_row')
-const templateResult = document.getElementById('template_results-table__tbody')
-
-function htmlToElements(html) {
-    const temp = document.createElement('template')
-    temp.innerHTML = html
-    return temp.content.childNodes
-}
-
-const find = (selector, elem) => {
-    if (!elem) {
-        elem = document
-    }
-    return elem.querySelector(selector)
-}
-
-const findAll = (selector, elem) => {
-    if (!elem) {
-        elem = document
-    }
-    return [...elem.querySelectorAll(selector)]
-}
-
-const dom = {
-    getStaticRow: (key, value) => {
-        const envRow = templateEnvRow.content.cloneNode(true)
-        const isObj = typeof value === 'object' && value !== null
-        const values = isObj ? Object.keys(value).map((k) => `${k}: ${value[k]}`) : null
-
-        const valuesElement = htmlToElements(
-            values ? `<ul>${values.map((val) => `<li>${val}</li>`).join('')}<ul>` : `<div>${value}</div>`)[0]
-        const td = findAll('td', envRow)
-        td[0].textContent = key
-        td[1].appendChild(valuesElement)
-
-        return envRow
-    },
-    getResultTBody: ({ testId, id, log, extras, resultsTableRow, tableHtml, result, collapsed }) => {
-        const resultBody = templateResult.content.cloneNode(true)
-        resultBody.querySelector('tbody').classList.add(result.toLowerCase())
-        resultBody.querySelector('tbody').id = testId
-        resultBody.querySelector('.collapsible').dataset.id = id
-
-        resultsTableRow.forEach((html) => {
-            const t = document.createElement('template')
-            t.innerHTML = html
-            resultBody.querySelector('.collapsible').appendChild(t.content)
-        })
-
-        if (log) {
-            // Wrap lines starting with "E" with span.error to color those lines red
-            const wrappedLog = log.replace(/^E.*$/gm, (match) => `<span class="error">${match}</span>`)
-            resultBody.querySelector('.log').innerHTML = wrappedLog
-        } else {
-            resultBody.querySelector('.log').remove()
-        }
-
-        if (collapsed) {
-            resultBody.querySelector('.collapsible > td')?.classList.add('collapsed')
-            resultBody.querySelector('.extras-row').classList.add('hidden')
-        } else {
-            resultBody.querySelector('.collapsible > td')?.classList.remove('collapsed')
-        }
-
-        const media = []
-        extras?.forEach(({ name, format_type, content }) => {
-            if (['image', 'video'].includes(format_type)) {
-                media.push({ path: content, name, format_type })
-            }
-
-            if (format_type === 'html') {
-                resultBody.querySelector('.extraHTML').insertAdjacentHTML('beforeend', `<div>${content}</div>`)
-            }
-        })
-        mediaViewer.setup(resultBody, media)
-
-        // Add custom html from the pytest_html_results_table_html hook
-        tableHtml?.forEach((item) => {
-            resultBody.querySelector('td[class="extra"]').insertAdjacentHTML('beforeend', item)
-        })
-
-        return resultBody
-    },
-}
-
-module.exports = {
-    dom,
-    htmlToElements,
-    find,
-    findAll,
-}
-
-},{"./mediaviewer.js":6}],3:[function(require,module,exports){
-const { manager } = require('./datamanager.js')
-const { doSort } = require('./sort.js')
-const storageModule = require('./storage.js')
-
-const getFilteredSubSet = (filter) =>
-    manager.allData.tests.filter(({ result }) => filter.includes(result.toLowerCase()))
-
-const doInitFilter = () => {
-    const currentFilter = storageModule.getVisible()
-    const filteredSubset = getFilteredSubSet(currentFilter)
-    manager.setRender(filteredSubset)
-}
-
-const doFilter = (type, show) => {
-    if (show) {
-        storageModule.showCategory(type)
-    } else {
-        storageModule.hideCategory(type)
-    }
-
-    const currentFilter = storageModule.getVisible()
-    const filteredSubset = getFilteredSubSet(currentFilter)
-    manager.setRender(filteredSubset)
-
-    const sortColumn = storageModule.getSort()
-    doSort(sortColumn, true)
-}
-
-module.exports = {
-    doFilter,
-    doInitFilter,
-}
-
-},{"./datamanager.js":1,"./sort.js":7,"./storage.js":8}],4:[function(require,module,exports){
-const { redraw, bindEvents, renderStatic } = require('./main.js')
-const { doInitFilter } = require('./filter.js')
-const { doInitSort } = require('./sort.js')
-const { manager } = require('./datamanager.js')
-const data = JSON.parse(document.getElementById('data-container').dataset.jsonblob)
-
-function init() {
-    manager.setManager(data)
-    doInitFilter()
-    doInitSort()
-    renderStatic()
-    redraw()
-    bindEvents()
-}
-
-init()
-
-},{"./datamanager.js":1,"./filter.js":3,"./main.js":5,"./sort.js":7}],5:[function(require,module,exports){
-const { dom, find, findAll } = require('./dom.js')
-const { manager } = require('./datamanager.js')
-const { doSort } = require('./sort.js')
-const { doFilter } = require('./filter.js')
-const {
-    getVisible,
-    getCollapsedIds,
-    setCollapsedIds,
-    getSort,
-    getSortDirection,
-    possibleFilters,
-} = require('./storage.js')
-
-const removeChildren = (node) => {
-    while (node.firstChild) {
-        node.removeChild(node.firstChild)
-    }
-}
-
-const renderStatic = () => {
-    const renderEnvironmentTable = () => {
-        const environment = manager.environment
-        const rows = Object.keys(environment).map((key) => dom.getStaticRow(key, environment[key]))
-        const table = document.getElementById('environment')
-        removeChildren(table)
-        rows.forEach((row) => table.appendChild(row))
-    }
-    renderEnvironmentTable()
-}
-
-const addItemToggleListener = (elem) => {
-    elem.addEventListener('click', ({ target }) => {
-        const id = target.parentElement.dataset.id
-        manager.toggleCollapsedItem(id)
-
-        const collapsedIds = getCollapsedIds()
-        if (collapsedIds.includes(id)) {
-            const updated = collapsedIds.filter((item) => item !== id)
-            setCollapsedIds(updated)
-        } else {
-            collapsedIds.push(id)
-            setCollapsedIds(collapsedIds)
-        }
-        redraw()
-    })
-}
-
-const renderContent = (tests) => {
-    const sortAttr = getSort(manager.initialSort)
-    const sortAsc = JSON.parse(getSortDirection())
-    const rows = tests.map(dom.getResultTBody)
-    const table = document.getElementById('results-table')
-    const tableHeader = document.getElementById('results-table-head')
-
-    const newTable = document.createElement('table')
-    newTable.id = 'results-table'
-
-    // remove all sorting classes and set the relevant
-    findAll('.sortable', tableHeader).forEach((elem) => elem.classList.remove('asc', 'desc'))
-    tableHeader.querySelector(`.sortable[data-column-type="${sortAttr}"]`)?.classList.add(sortAsc ? 'desc' : 'asc')
-    newTable.appendChild(tableHeader)
-
-    if (!rows.length) {
-        const emptyTable = document.getElementById('template_results-table__body--empty').content.cloneNode(true)
-        newTable.appendChild(emptyTable)
-    } else {
-        rows.forEach((row) => {
-            if (!!row) {
-                findAll('.collapsible td:not(.col-links', row).forEach(addItemToggleListener)
-                find('.logexpander', row).addEventListener('click',
-                    (evt) => evt.target.parentNode.classList.toggle('expanded'),
-                )
-                newTable.appendChild(row)
-            }
-        })
-    }
-
-    table.replaceWith(newTable)
-}
-
-const renderDerived = () => {
-    const currentFilter = getVisible()
-    possibleFilters.forEach((result) => {
-        const input = document.querySelector(`input[data-test-result="${result}"]`)
-        input.checked = currentFilter.includes(result)
-    })
-}
-
-const bindEvents = () => {
-    const filterColumn = (evt) => {
-        const { target: element } = evt
-        const { testResult } = element.dataset
-
-        doFilter(testResult, element.checked)
-        const collapsedIds = getCollapsedIds()
-        const updated = manager.renderData.tests.map((test) => {
-            return {
-                ...test,
-                collapsed: collapsedIds.includes(test.id),
-            }
-        })
-        manager.setRender(updated)
-        redraw()
-    }
-
-    const header = document.getElementById('environment-header')
-    header.addEventListener('click', () => {
-        const table = document.getElementById('environment')
-        table.classList.toggle('hidden')
-        header.classList.toggle('collapsed')
-    })
-
-    findAll('input[name="filter_checkbox"]').forEach((elem) => {
-        elem.addEventListener('click', filterColumn)
-    })
-
-    findAll('.sortable').forEach((elem) => {
-        elem.addEventListener('click', (evt) => {
-            const { target: element } = evt
-            const { columnType } = element.dataset
-            doSort(columnType)
-            redraw()
-        })
-    })
-
-    document.getElementById('show_all_details').addEventListener('click', () => {
-        manager.allCollapsed = false
-        setCollapsedIds([])
-        redraw()
-    })
-    document.getElementById('hide_all_details').addEventListener('click', () => {
-        manager.allCollapsed = true
-        const allIds = manager.renderData.tests.map((test) => test.id)
-        setCollapsedIds(allIds)
-        redraw()
-    })
-}
-
-const redraw = () => {
-    const { testSubset } = manager
-
-    renderContent(testSubset)
-    renderDerived()
-}
-
-module.exports = {
-    redraw,
-    bindEvents,
-    renderStatic,
-}
-
-},{"./datamanager.js":1,"./dom.js":2,"./filter.js":3,"./sort.js":7,"./storage.js":8}],6:[function(require,module,exports){
-class MediaViewer {
-    constructor(assets) {
-        this.assets = assets
-        this.index = 0
-    }
-
-    nextActive() {
-        this.index = this.index === this.assets.length - 1 ? 0 : this.index + 1
-        return [this.activeFile, this.index]
-    }
-
-    prevActive() {
-        this.index = this.index === 0 ? this.assets.length - 1 : this.index -1
-        return [this.activeFile, this.index]
-    }
-
-    get currentIndex() {
-        return this.index
-    }
-
-    get activeFile() {
-        return this.assets[this.index]
-    }
-}
-
-
-const setup = (resultBody, assets) => {
-    if (!assets.length) {
-        resultBody.querySelector('.media').classList.add('hidden')
-        return
-    }
-
-    const mediaViewer = new MediaViewer(assets)
-    const container = resultBody.querySelector('.media-container')
-    const leftArrow = resultBody.querySelector('.media-container__nav--left')
-    const rightArrow = resultBody.querySelector('.media-container__nav--right')
-    const mediaName = resultBody.querySelector('.media__name')
-    const counter = resultBody.querySelector('.media__counter')
-    const imageEl = resultBody.querySelector('img')
-    const sourceEl = resultBody.querySelector('source')
-    const videoEl = resultBody.querySelector('video')
-
-    const setImg = (media, index) => {
-        if (media?.format_type === 'image') {
-            imageEl.src = media.path
-
-            imageEl.classList.remove('hidden')
-            videoEl.classList.add('hidden')
-        } else if (media?.format_type === 'video') {
-            sourceEl.src = media.path
-
-            videoEl.classList.remove('hidden')
-            imageEl.classList.add('hidden')
-        }
-
-        mediaName.innerText = media?.name
-        counter.innerText = `${index + 1} / ${assets.length}`
-    }
-    setImg(mediaViewer.activeFile, mediaViewer.currentIndex)
-
-    const moveLeft = () => {
-        const [media, index] = mediaViewer.prevActive()
-        setImg(media, index)
-    }
-    const doRight = () => {
-        const [media, index] = mediaViewer.nextActive()
-        setImg(media, index)
-    }
-    const openImg = () => {
-        window.open(mediaViewer.activeFile.path, '_blank')
-    }
-    if (assets.length === 1) {
-        container.classList.add('media-container--fullscreen')
-    } else {
-        leftArrow.addEventListener('click', moveLeft)
-        rightArrow.addEventListener('click', doRight)
-    }
-    imageEl.addEventListener('click', openImg)
-}
-
-module.exports = {
-    setup,
-}
-
-},{}],7:[function(require,module,exports){
-const { manager } = require('./datamanager.js')
-const storageModule = require('./storage.js')
-
-const genericSort = (list, key, ascending, customOrder) => {
-    let sorted
-    if (customOrder) {
-        sorted = list.sort((a, b) => {
-            const aValue = a.result.toLowerCase()
-            const bValue = b.result.toLowerCase()
-
-            const aIndex = customOrder.findIndex((item) => item.toLowerCase() === aValue)
-            const bIndex = customOrder.findIndex((item) => item.toLowerCase() === bValue)
-
-            // Compare the indices to determine the sort order
-            return aIndex - bIndex
-        })
-    } else {
-        sorted = list.sort((a, b) => a[key] === b[key] ? 0 : a[key] > b[key] ? 1 : -1)
-    }
-
-    if (ascending) {
-        sorted.reverse()
-    }
-    return sorted
-}
-
-const durationSort = (list, ascending) => {
-    const parseDuration = (duration) => {
-        if (duration.includes(':')) {
-            // If it's in the format "HH:mm:ss"
-            const [hours, minutes, seconds] = duration.split(':').map(Number)
-            return (hours * 3600 + minutes * 60 + seconds) * 1000
-        } else {
-            // If it's in the format "nnn ms"
-            return parseInt(duration)
-        }
-    }
-    const sorted = list.sort((a, b) => parseDuration(a['duration']) - parseDuration(b['duration']))
-    if (ascending) {
-        sorted.reverse()
-    }
-    return sorted
-}
-
-const doInitSort = () => {
-    const type = storageModule.getSort(manager.initialSort)
-    const ascending = storageModule.getSortDirection()
-    const list = manager.testSubset
-    const initialOrder = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed', 'Skipped', 'Passed']
-
-    storageModule.setSort(type)
-    storageModule.setSortDirection(ascending)
-
-    if (type?.toLowerCase() === 'original') {
-        manager.setRender(list)
-    } else {
-        let sortedList
-        switch (type) {
-        case 'duration':
-            sortedList = durationSort(list, ascending)
-            break
-        case 'result':
-            sortedList = genericSort(list, type, ascending, initialOrder)
-            break
-        default:
-            sortedList = genericSort(list, type, ascending)
-            break
-        }
-        manager.setRender(sortedList)
-    }
-}
-
-const doSort = (type, skipDirection) => {
-    const newSortType = storageModule.getSort(manager.initialSort) !== type
-    const currentAsc = storageModule.getSortDirection()
-    let ascending
-    if (skipDirection) {
-        ascending = currentAsc
-    } else {
-        ascending = newSortType ? false : !currentAsc
-    }
-    storageModule.setSort(type)
-    storageModule.setSortDirection(ascending)
-
-    const list = manager.testSubset
-    const sortedList = type === 'duration' ? durationSort(list, ascending) : genericSort(list, type, ascending)
-    manager.setRender(sortedList)
-}
-
-module.exports = {
-    doInitSort,
-    doSort,
-}
-
-},{"./datamanager.js":1,"./storage.js":8}],8:[function(require,module,exports){
-const possibleFilters = [
-    'passed',
-    'skipped',
-    'failed',
-    'error',
-    'xfailed',
-    'xpassed',
-    'rerun',
-]
-
-const getVisible = () => {
-    const url = new URL(window.location.href)
-    const settings = new URLSearchParams(url.search).get('visible')
-    const lower = (item) => {
-        const lowerItem = item.toLowerCase()
-        if (possibleFilters.includes(lowerItem)) {
-            return lowerItem
-        }
-        return null
-    }
-    return settings === null ?
-        possibleFilters :
-        [...new Set(settings?.split(',').map(lower).filter((item) => item))]
-}
-
-const hideCategory = (categoryToHide) => {
-    const url = new URL(window.location.href)
-    const visibleParams = new URLSearchParams(url.search).get('visible')
-    const currentVisible = visibleParams ? visibleParams.split(',') : [...possibleFilters]
-    const settings = [...new Set(currentVisible)].filter((f) => f !== categoryToHide).join(',')
-
-    url.searchParams.set('visible', settings)
-    window.history.pushState({}, null, unescape(url.href))
-}
-
-const showCategory = (categoryToShow) => {
-    if (typeof window === 'undefined') {
-        return
-    }
-    const url = new URL(window.location.href)
-    const currentVisible = new URLSearchParams(url.search).get('visible')?.split(',').filter(Boolean) ||
-        [...possibleFilters]
-    const settings = [...new Set([categoryToShow, ...currentVisible])]
-    const noFilter = possibleFilters.length === settings.length || !settings.length
-
-    noFilter ? url.searchParams.delete('visible') : url.searchParams.set('visible', settings.join(','))
-    window.history.pushState({}, null, unescape(url.href))
-}
-
-const getSort = (initialSort) => {
-    const url = new URL(window.location.href)
-    let sort = new URLSearchParams(url.search).get('sort')
-    if (!sort) {
-        sort = initialSort || 'result'
-    }
-    return sort
-}
-
-const setSort = (type) => {
-    const url = new URL(window.location.href)
-    url.searchParams.set('sort', type)
-    window.history.pushState({}, null, unescape(url.href))
-}
-
-const getCollapsedCategory = (renderCollapsed) => {
-    let categories
-    if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href)
-        const collapsedItems = new URLSearchParams(url.search).get('collapsed')
-        switch (true) {
-        case !renderCollapsed && collapsedItems === null:
-            categories = ['passed']
-            break
-        case collapsedItems?.length === 0 || /^["']{2}$/.test(collapsedItems):
-            categories = []
-            break
-        case /^all$/.test(collapsedItems) || collapsedItems === null && /^all$/.test(renderCollapsed):
-            categories = [...possibleFilters]
-            break
-        default:
-            categories = collapsedItems?.split(',').map((item) => item.toLowerCase()) || renderCollapsed
-            break
-        }
-    } else {
-        categories = []
-    }
-    return categories
-}
-
-const getSortDirection = () => JSON.parse(sessionStorage.getItem('sortAsc')) || false
-const setSortDirection = (ascending) => sessionStorage.setItem('sortAsc', ascending)
-
-const getCollapsedIds = () => JSON.parse(sessionStorage.getItem('collapsedIds')) || []
-const setCollapsedIds = (list) => sessionStorage.setItem('collapsedIds', JSON.stringify(list))
-
-module.exports = {
-    getVisible,
-    hideCategory,
-    showCategory,
-    getCollapsedIds,
-    setCollapsedIds,
-    getSort,
-    setSort,
-    getSortDirection,
-    setSortDirection,
-    getCollapsedCategory,
-    possibleFilters,
-}
-
-},{}]},{},[4]);
-    </script>
+  </div>
+
+  <!-- ===== ENVIRONMENT ===== -->
+  <div class="section-title">実行環境</div>
+  <div class="env-grid">
+    <div class="env-item"><div class="env-key">Python</div><div class="env-val">—</div></div>
+    <div class="env-item"><div class="env-key">Platform</div><div class="env-val">—</div></div>
+    <div class="env-item"><div class="env-key">実行日時</div><div class="env-val">2026年07月02日 17:50:10</div></div>
+    <div class="env-item"><div class="env-key">総実行時間</div><div class="env-val">3.297 秒</div></div>
+    <div class="env-item"><div class="env-key">合格率</div><div class="env-val">98% (124/126)</div></div>
+    <div class="env-item"><div class="env-key">ステータス</div><div class="env-val" style="color:var(--green)">✅ 全テスト合格</div></div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <p>FX Platform — 自動生成テストレポート &nbsp;|&nbsp; 2026年07月02日 17:50:10 &nbsp;|&nbsp;
+    <a href="/">ホームへ戻る</a></p>
   </footer>
+
+</div>
+
+<script>
+function filterRows(outcome, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active','active-pass','active-skip','active-fail');
+  });
+  const classMap = {passed:'active-pass', skipped:'active-skip', failed:'active-fail', all:'active'};
+  btn.classList.add(classMap[outcome] || 'active');
+
+  document.querySelectorAll('#tableBody tr').forEach(row => {
+    if (outcome === 'all') {
+      row.classList.remove('hidden');
+    } else {
+      row.dataset.outcome === outcome
+        ? row.classList.remove('hidden')
+        : row.classList.add('hidden');
+    }
+  });
+}
+
+// カウントアップアニメーション
+function countUp(el, target, duration) {
+  let start = 0;
+  const step = target / (duration / 16);
+  const tick = () => {
+    start = Math.min(start + step, target);
+    el.textContent = Math.floor(start);
+    if (start < target) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+document.querySelectorAll('.kpi-value').forEach(el => {
+  const val = parseInt(el.textContent);
+  if (!isNaN(val)) { el.textContent = '0'; countUp(el, val, 800); }
+});
+</script>
+</body>
 </html>
