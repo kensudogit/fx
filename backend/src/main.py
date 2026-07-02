@@ -17,6 +17,7 @@ import logging
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from src.analysis.chart import generate_technical_chart
 from src.analysis.fundamental import (
@@ -1226,3 +1227,61 @@ async def analysis_risk_report(
         return build_risk_report(symbol, account_balance, risk_percent, days)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── テストレポート静的配信 ─────────────────────────────────────
+# テスト HTML レポートを /test-report/ でブラウザから閲覧可能にする。
+# Railway の公開 URL + /test-report/ でアクセスできる。
+import os as _os
+
+_REPORT_DIR = _os.path.join(_os.path.dirname(__file__), "..", "tests", "report")
+_REPORT_DIR = _os.path.normpath(_REPORT_DIR)
+
+if _os.path.isdir(_REPORT_DIR):
+    # レポートディレクトリが存在する場合のみ静的配信を有効化
+    app.mount("/test-report", StaticFiles(directory=_REPORT_DIR, html=True), name="test-report")
+
+
+@app.get("/test-report", response_class=HTMLResponse, include_in_schema=False)
+async def test_report_redirect():
+    """テストレポートへのリダイレクト用エンドポイント。
+
+    /test-report にアクセスした場合に /test-report/test_report.html へ誘導する。
+    レポートが未生成の場合は生成方法を案内する。
+    """
+    report_html = _os.path.join(_REPORT_DIR, "test_report.html")
+    if _os.path.exists(report_html):
+        # レポートファイルが存在する場合はその内容を返す
+        with open(report_html, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    # レポートが未生成の場合は案内ページを返す
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>FX Platform - Test Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+           background: #0f172a; color: #e2e8f0; display: flex;
+           align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+            padding: 40px; max-width: 600px; text-align: center; }
+    h1 { color: #38bdf8; margin-bottom: 12px; }
+    code { background: #0f172a; padding: 12px 20px; border-radius: 8px;
+           display: block; margin: 20px 0; font-size: 14px;
+           border: 1px solid #475569; text-align: left; }
+    .note { color: #94a3b8; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📊 FX Platform Test Report</h1>
+    <p>テストレポートがまだ生成されていません。</p>
+    <p>以下のコマンドでテストを実行してレポートを生成してください:</p>
+    <code>cd backend<br>run_presentation_tests.bat</code>
+    <p class="note">レポート生成後、このページを更新すると表示されます。</p>
+  </div>
+</body>
+</html>
+""", status_code=200)

@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title id="head-title">test_report.html</title>
+      <style type="text/css">body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  /* do not increase min-width as some may use split screens */
+  min-width: 800px;
+  color: #999;
+}
+
+h1 {
+  font-size: 24px;
+  color: black;
+}
+
+h2 {
+  font-size: 16px;
+  color: black;
+}
+
+p {
+  color: black;
+}
+
+a {
+  color: #999;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/******************************
+ * SUMMARY INFORMATION
+ ******************************/
+#environment td {
+  padding: 5px;
+  border: 1px solid #e6e6e6;
+  vertical-align: top;
+}
+#environment tr:nth-child(odd) {
+  background-color: #f6f6f6;
+}
+#environment ul {
+  margin: 0;
+  padding: 0 20px;
+}
+
+/******************************
+ * TEST RESULT COLORS
+ ******************************/
+span.passed,
+.passed .col-result {
+  color: green;
+}
+
+span.skipped,
+span.xfailed,
+span.rerun,
+.skipped .col-result,
+.xfailed .col-result,
+.rerun .col-result {
+  color: orange;
+}
+
+span.error,
+span.failed,
+span.xpassed,
+.error .col-result,
+.failed .col-result,
+.xpassed .col-result {
+  color: red;
+}
+
+.col-links__extra {
+  margin-right: 3px;
+}
+
+/******************************
+ * RESULTS TABLE
+ *
+ * 1. Table Layout
+ * 2. Extra
+ * 3. Sorting items
+ *
+ ******************************/
+/*------------------
+ * 1. Table Layout
+ *------------------*/
+#results-table {
+  border: 1px solid #e6e6e6;
+  color: #999;
+  font-size: 12px;
+  width: 100%;
+}
+#results-table th,
+#results-table td {
+  padding: 5px;
+  border: 1px solid #e6e6e6;
+  text-align: left;
+}
+#results-table th {
+  font-weight: bold;
+}
+
+/*------------------
+ * 2. Extra
+ *------------------*/
+.logwrapper {
+  max-height: 230px;
+  overflow-y: scroll;
+  background-color: #e6e6e6;
+}
+.logwrapper.expanded {
+  max-height: none;
+}
+.logwrapper.expanded .logexpander:after {
+  content: "collapse [-]";
+}
+.logwrapper .logexpander {
+  z-index: 1;
+  position: sticky;
+  top: 10px;
+  width: max-content;
+  border: 1px solid;
+  border-radius: 3px;
+  padding: 5px 7px;
+  margin: 10px 0 10px calc(100% - 80px);
+  cursor: pointer;
+  background-color: #e6e6e6;
+}
+.logwrapper .logexpander:after {
+  content: "expand [+]";
+}
+.logwrapper .logexpander:hover {
+  color: #000;
+  border-color: #000;
+}
+.logwrapper .log {
+  min-height: 40px;
+  position: relative;
+  top: -50px;
+  height: calc(100% + 50px);
+  border: 1px solid #e6e6e6;
+  color: black;
+  display: block;
+  font-family: "Courier New", Courier, monospace;
+  padding: 5px;
+  padding-right: 80px;
+  white-space: pre-wrap;
+}
+
+div.media {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin: 0 5px;
+  overflow: hidden;
+  width: 320px;
+}
+
+.media-container {
+  display: grid;
+  grid-template-columns: 25px auto 25px;
+  align-items: center;
+  flex: 1 1;
+  overflow: hidden;
+  height: 200px;
+}
+
+.media-container--fullscreen {
+  grid-template-columns: 0px auto 0px;
+}
+
+.media-container__nav--right,
+.media-container__nav--left {
+  text-align: center;
+  cursor: pointer;
+}
+
+.media-container__viewport {
+  cursor: pointer;
+  text-align: center;
+  height: inherit;
+}
+.media-container__viewport img,
+.media-container__viewport video {
+  object-fit: cover;
+  width: 100%;
+  max-height: 100%;
+}
+
+.media__name,
+.media__counter {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  flex: 0 0 25px;
+  align-items: center;
+}
+
+.collapsible td:not(.col-links) {
+  cursor: pointer;
+}
+.collapsible td:not(.col-links):hover::after {
+  color: #bbb;
+  font-style: italic;
+  cursor: pointer;
+}
+
+.col-result {
+  width: 130px;
+}
+.col-result:hover::after {
+  content: " (hide details)";
+}
+
+.col-result.collapsed:hover::after {
+  content: " (show details)";
+}
+
+#environment-header h2:hover::after {
+  content: " (hide details)";
+  color: #bbb;
+  font-style: italic;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#environment-header.collapsed h2:hover::after {
+  content: " (show details)";
+  color: #bbb;
+  font-style: italic;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/*------------------
+ * 3. Sorting items
+ *------------------*/
+.sortable {
+  cursor: pointer;
+}
+.sortable.desc:after {
+  content: " ";
+  position: relative;
+  left: 5px;
+  bottom: -12.5px;
+  border: 10px solid #4caf50;
+  border-bottom: 0;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+.sortable.asc:after {
+  content: " ";
+  position: relative;
+  left: 5px;
+  bottom: 12.5px;
+  border: 10px solid #4caf50;
+  border-top: 0;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+
+.hidden, .summary__reload__button.hidden {
+  display: none;
+}
+
+.summary__data {
+  flex: 0 0 550px;
+}
+.summary__reload {
+  flex: 1 1;
+  display: flex;
+  justify-content: center;
+}
+.summary__reload__button {
+  flex: 0 0 300px;
+  display: flex;
+  color: white;
+  font-weight: bold;
+  background-color: #4caf50;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.summary__reload__button:hover {
+  background-color: #46a049;
+}
+.summary__spacer {
+  flex: 0 0 550px;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+}
+
+.filters,
+.collapse {
+  display: flex;
+  align-items: center;
+}
+.filters button,
+.collapse button {
+  color: #999;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.filters button:hover,
+.collapse button:hover {
+  color: #ccc;
+}
+
+.filter__label {
+  margin-right: 10px;
+}
+
+      </style>
+    
+  </head>
+  <body>
+    <h1 id="title">test_report.html</h1>
+    <p>Report generated on 02-Jul-2026 at 10:37:32 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a>
+        v4.1.1</p>
+    <div id="environment-header">
+      <h2>Environment</h2>
+    </div>
+    <table id="environment"></table>
+    <!-- TEMPLATES -->
+      <template id="template_environment_row">
+      <tr>
+        <td></td>
+        <td></td>
+      </tr>
+    </template>
+    <template id="template_results-table__body--empty">
+      <tbody class="results-table-row">
+        <tr id="not-found-message">
+          <td colspan="4">No results found. Check the filters.</th>
+        </tr>
+    </template>
+    <template id="template_results-table__tbody">
+      <tbody class="results-table-row">
+        <tr class="collapsible">
+        </tr>
+        <tr class="extras-row">
+          <td class="extra" colspan="4">
+            <div class="extraHTML"></div>
+            <div class="media">
+              <div class="media-container">
+                  <div class="media-container__nav--left"><</div>
+                  <div class="media-container__viewport">
+                    <img src="" />
+                    <video controls>
+                      <source src="" type="video/mp4">
+                    </video>
+                  </div>
+                  <div class="media-container__nav--right">></div>
+                </div>
+                <div class="media__name"></div>
+                <div class="media__counter"></div>
+            </div>
+            <div class="logwrapper">
+              <div class="logexpander"></div>
+              <div class="log"></div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </template>
+    <!-- END TEMPLATES -->
+    <div class="summary">
+      <div class="summary__data">
+        <h2>Summary</h2>
+        <div class="additional-summary prefix">
+        </div>
+        <p class="run-count">77 tests took 952 ms.</p>
+        <p class="filter">(Un)check the boxes to filter the results.</p>
+        <div class="summary__reload">
+          <div class="summary__reload__button hidden" onclick="location.reload()">
+            <div>There are still tests running. <br />Reload this page to get the latest results!</div>
+          </div>
+        </div>
+        <div class="summary__spacer"></div>
+        <div class="controls">
+          <div class="filters">
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="failed" disabled/>
+            <span class="failed">0 Failed,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="passed" />
+            <span class="passed">77 Passed,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="skipped" />
+            <span class="skipped">83 Skipped,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xfailed" disabled/>
+            <span class="xfailed">0 Expected failures,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="xpassed" disabled/>
+            <span class="xpassed">0 Unexpected passes,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="error" disabled/>
+            <span class="error">0 Errors,</span>
+            <input checked="true" class="filter" name="filter_checkbox" type="checkbox" data-test-result="rerun" disabled/>
+            <span class="rerun">0 Reruns</span>
+          </div>
+          <div class="collapse">
+            <button id="show_all_details">Show all details</button>&nbsp;/&nbsp;<button id="hide_all_details">Hide all details</button>
+          </div>
+        </div>
+      </div>
+      <div class="additional-summary summary">
+      </div>
+      <div class="additional-summary postfix">
+      </div>
+    </div>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable" data-column-type="result">Result</th>
+          <th class="sortable" data-column-type="testId">Test</th>
+          <th class="sortable" data-column-type="duration">Duration</th>
+          <th>Links</th>
+        </tr>
+      </thead>
+    </table>
+  </body>
+  <footer>
+    <div id="data-container" data-jsonblob="{&#34;environment&#34;: {&#34;Python&#34;: &#34;3.14.0&#34;, &#34;Platform&#34;: &#34;Windows-11-10.0.26100-SP0&#34;, &#34;Packages&#34;: {&#34;pytest&#34;: &#34;8.4.2&#34;, &#34;pluggy&#34;: &#34;1.6.0&#34;}, &#34;Plugins&#34;: {&#34;anyio&#34;: &#34;4.13.0&#34;, &#34;asyncio&#34;: &#34;0.24.0&#34;, &#34;cov&#34;: &#34;6.0.0&#34;, &#34;html&#34;: &#34;4.1.1&#34;, &#34;metadata&#34;: &#34;3.1.1&#34;}, &#34;JAVA_HOME&#34;: &#34;C:\\Program Files\\Java\\jdk-23&#34;}, &#34;tests&#34;: {&#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_returns_bcrypt_format&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_returns_bcrypt_format::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_returns_bcrypt_format::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 39, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_is_not_plaintext&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_is_not_plaintext::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_hash_is_not_plaintext::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 45, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_same_password_produces_different_hashes&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_same_password_produces_different_hashes::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_same_password_produces_different_hashes::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 51, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_correct_password_verifies_successfully&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_correct_password_verifies_successfully::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_correct_password_verifies_successfully::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 62, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_wrong_password_fails_verification&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_wrong_password_fails_verification::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_wrong_password_fails_verification::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 69, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_empty_password_can_be_hashed&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_empty_password_can_be_hashed::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_empty_password_can_be_hashed::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 75, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_long_password_is_handled_safely&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_long_password_is_handled_safely::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_long_password_is_handled_safely::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 80, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_japanese_password_is_supported&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestPasswordSecurity::test_japanese_password_is_supported::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestPasswordSecurity::test_japanese_password_is_supported::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 92, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_token_is_string&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_token_is_string::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_token_is_string::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 117, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_token_has_three_parts&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_token_has_three_parts::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_token_has_three_parts::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 122, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_decode_returns_original_subject&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_decode_returns_original_subject::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_decode_returns_original_subject::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 131, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_decoded_payload_contains_expiry&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_decoded_payload_contains_expiry::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_decoded_payload_contains_expiry::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 140, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_custom_claims_are_preserved&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_custom_claims_are_preserved::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_custom_claims_are_preserved::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 149, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_invalid_token_returns_none&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_invalid_token_returns_none::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_invalid_token_returns_none::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 161, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_tampered_token_returns_none&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestJWTTokens::test_tampered_token_returns_none::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestJWTTokens::test_tampered_token_returns_none::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 169, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_has_fx_prefix&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_has_fx_prefix::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_has_fx_prefix::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 195, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_is_sufficiently_long&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_is_sufficiently_long::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_is_sufficiently_long::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 203, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_keys_are_unique&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_keys_are_unique::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestAPIKeys::test_api_keys_are_unique::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 208, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_hash_is_sha256&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_hash_is_sha256::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestAPIKeys::test_api_key_hash_is_sha256::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 213, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;bcrypt&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_encrypt_adds_enc_prefix&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_encrypt_adds_enc_prefix::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestSecretEncryption::test_encrypt_adds_enc_prefix::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 243, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;cryptography&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_roundtrip_encryption_decryption&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_roundtrip_encryption_decryption::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestSecretEncryption::test_roundtrip_encryption_decryption::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 254, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;cryptography&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_plaintext_legacy_token_passes_through&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_plaintext_legacy_token_passes_through::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestSecretEncryption::test_plaintext_legacy_token_passes_through::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 262, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;cryptography&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_different_plaintext_produces_different_ciphertext&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_01_security.py::TestSecretEncryption::test_different_plaintext_produces_different_ciphertext::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_01_security.py::TestSecretEncryption::test_different_plaintext_produces_different_ciphertext::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_01_security.py&amp;#x27;, 272, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;cryptography&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_basic_calculation&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_basic_calculation&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_basic_calculation&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_warmup_period_is_nan&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_warmup_period_is_nan&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_warmup_period_is_nan&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_latest_value_is_not_nan&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_latest_value_is_not_nan&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_latest_value_is_not_nan&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_reacts_faster_than_sma_on_price_surge&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_reacts_faster_than_sma_on_price_surge&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_ema_reacts_faster_than_sma_on_price_surge&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_of_constant_series_equals_constant&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_of_constant_series_equals_constant&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMovingAverages::test_sma_of_constant_series_equals_constant&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_upper_band_is_above_middle&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_upper_band_is_above_middle&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_upper_band_is_above_middle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_lower_band_is_below_middle&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_lower_band_is_below_middle&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_lower_band_is_below_middle&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_band_width_increases_with_volatility&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_band_width_increases_with_volatility&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_band_width_increases_with_volatility&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_price_at_mean_is_near_middle_band&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_price_at_mean_is_near_middle_band&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestBollingerBands::test_price_at_mean_is_near_middle_band&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_returns_dict_with_three_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_returns_dict_with_three_keys&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_returns_dict_with_three_keys&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_histogram_equals_macd_minus_signal&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_histogram_equals_macd_minus_signal&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_histogram_equals_macd_minus_signal&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_positive_in_uptrend&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_positive_in_uptrend&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestMACD::test_macd_positive_in_uptrend&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_within_0_to_100&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_within_0_to_100&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_within_0_to_100&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_high_after_consecutive_gains&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_high_after_consecutive_gains&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_high_after_consecutive_gains&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_low_after_consecutive_losses&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_low_after_consecutive_losses&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_low_after_consecutive_losses&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_near_50_for_sideways_market&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_near_50_for_sideways_market&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestRSI::test_rsi_near_50_for_sideways_market&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_all_required_columns_present&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_all_required_columns_present&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_all_required_columns_present&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_output_has_same_length_as_input&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_output_has_same_length_as_input&#34;, &#34;duration&#34;: &#34;4 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_output_has_same_length_as_input&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;4 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_sufficient_valid_rows_after_warmup&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_sufficient_valid_rows_after_warmup&#34;, &#34;duration&#34;: &#34;5 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_sufficient_valid_rows_after_warmup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;5 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_rsi_values_are_in_valid_range&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_rsi_values_are_in_valid_range&#34;, &#34;duration&#34;: &#34;4 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_02_technical_indicators.py::TestComputeAllIndicators::test_rsi_values_are_in_valid_range&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;4 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_oversold_generates_buy_signal&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_oversold_generates_buy_signal&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_oversold_generates_buy_signal&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_overbought_generates_sell_signal&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_overbought_generates_sell_signal&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_rsi_overbought_generates_sell_signal&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_macd_above_signal_generates_buy&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_macd_above_signal_generates_buy&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_macd_above_signal_generates_buy&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_price_below_lower_bb_generates_buy&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_price_below_lower_bb_generates_buy&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_price_below_lower_bb_generates_buy&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_stoch_both_oversold_generates_buy&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_stoch_both_oversold_generates_buy&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_stoch_both_oversold_generates_buy&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_neutral_indicators_produce_no_signals&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_neutral_indicators_produce_no_signals&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_neutral_indicators_produce_no_signals&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_multiple_indicators_can_trigger_simultaneously&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_multiple_indicators_can_trigger_simultaneously&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_multiple_indicators_can_trigger_simultaneously&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_signal_has_required_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_signal_has_required_keys&#34;, &#34;duration&#34;: &#34;6 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestSignalFromRow::test_signal_has_required_keys&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;6 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_majority_buy_signals_gives_buy_bias&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_majority_buy_signals_gives_buy_bias::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_majority_buy_signals_gives_buy_bias::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_03_trading_signals.py&amp;#x27;, 158, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;aggregate_signals&amp;#x27; from &amp;#x27;src.analysis.signals&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\analysis\\\\signals.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_majority_sell_signals_gives_sell_bias&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_majority_sell_signals_gives_sell_bias::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_majority_sell_signals_gives_sell_bias::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_03_trading_signals.py&amp;#x27;, 169, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;aggregate_signals&amp;#x27; from &amp;#x27;src.analysis.signals&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\analysis\\\\signals.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_empty_signals_gives_hold_bias&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_empty_signals_gives_hold_bias::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_empty_signals_gives_hold_bias::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_03_trading_signals.py&amp;#x27;, 180, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;aggregate_signals&amp;#x27; from &amp;#x27;src.analysis.signals&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\analysis\\\\signals.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_aggregate_result_contains_counts&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_aggregate_result_contains_counts::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestAggregateSignals::test_aggregate_result_contains_counts::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_03_trading_signals.py&amp;#x27;, 186, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;aggregate_signals&amp;#x27; from &amp;#x27;src.analysis.signals&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\analysis\\\\signals.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_returns_dict&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_returns_dict&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_returns_dict&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_win_rate&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_win_rate&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_win_rate&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_win_rate_is_in_valid_range&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_win_rate_is_in_valid_range&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_win_rate_is_in_valid_range&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_total_trades&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_total_trades&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_has_total_trades&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_with_200_rows_has_sufficient_trades&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_with_200_rows_has_sufficient_trades&#34;, &#34;duration&#34;: &#34;10 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_03_trading_signals.py::TestBacktestSignals::test_backtest_with_200_rows_has_sufficient_trades&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;10 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_usdjpy_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_usdjpy_pip_size&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_usdjpy_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurjpy_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurjpy_pip_size&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurjpy_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurusd_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurusd_pip_size&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_eurusd_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_gbpusd_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_gbpusd_pip_size&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_gbpusd_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_lowercase_symbol_is_handled&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_lowercase_symbol_is_handled&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_lowercase_symbol_is_handled&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_audjpy_pip_size&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_audjpy_pip_size&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipSize::test_audjpy_pip_size&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_eurusd_pip_value_is_10_usd&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_eurusd_pip_value_is_10_usd&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_eurusd_pip_value_is_10_usd&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_gbpusd_pip_value_is_10_usd&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_gbpusd_pip_value_is_10_usd&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_gbpusd_pip_value_is_10_usd&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_usdjpy_pip_value_decreases_as_rate_rises&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_usdjpy_pip_value_decreases_as_rate_rises&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_usdjpy_pip_value_decreases_as_rate_rises&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_zero_price_returns_zero&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_zero_price_returns_zero&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestPipValuePerLot::test_zero_price_returns_zero&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_position_size_is_positive&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_position_size_is_positive&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_position_size_is_positive&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_higher_risk_gives_larger_position&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_higher_risk_gives_larger_position&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_higher_risk_gives_larger_position&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_wider_stop_gives_smaller_position&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_wider_stop_gives_smaller_position&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_wider_stop_gives_smaller_position&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_result_contains_risk_amount_usd&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_result_contains_risk_amount_usd&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalculatePositionSize::test_result_contains_risk_amount_usd&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_profit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_profit&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_profit&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_loss&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_loss&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_buy_position_loss&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_profit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_profit&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_profit&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_loss&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_loss&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_sell_position_loss&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_zero_price_returns_zero&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_zero_price_returns_zero&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_zero_price_returns_zero&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_larger_units_gives_larger_pnl&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_larger_units_gives_larger_pnl&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_larger_units_gives_larger_pnl&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_eurusd_50pip_profit_approximately_50_usd&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_eurusd_50pip_profit_approximately_50_usd&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestCalcRealizedPnlUsd::test_eurusd_50pip_profit_approximately_50_usd&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_returns_dict&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_returns_dict&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_returns_dict&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_has_total_pnl&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_has_total_pnl&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_aggregate_has_total_pnl&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_all_winning_positions_gives_100_win_rate&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_all_winning_positions_gives_100_win_rate&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_all_winning_positions_gives_100_win_rate&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_empty_positions_returns_zero_pnl&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_empty_positions_returns_zero_pnl&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestAggregatePnL::test_empty_positions_returns_zero_pnl&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_weekly_breakdown_returns_list&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_weekly_breakdown_returns_list&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_weekly_breakdown_returns_list&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_empty_positions_returns_empty_list&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_empty_positions_returns_empty_list&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_04_pnl_position_sizing.py::TestWeeklyPnLBreakdown::test_empty_positions_returns_empty_list&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_list_presets_returns_list&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_list_presets_returns_list&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_list_presets_returns_list&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_all_five_presets_are_present&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_all_five_presets_are_present&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_all_five_presets_are_present&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_each_preset_has_required_fields&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_each_preset_has_required_fields&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_each_preset_has_required_fields&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_preset_ids_are_unique&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_preset_ids_are_unique&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_preset_ids_are_unique&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_strategy_presets_dict_exists&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_strategy_presets_dict_exists&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestListPresets::test_strategy_presets_dict_exists&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_preset_has_low_risk&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_preset_has_low_risk&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_preset_has_low_risk&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_has_high_confidence_threshold&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_has_high_confidence_threshold&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_conservative_has_high_confidence_threshold&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_preset_has_higher_risk_than_conservative&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_preset_has_higher_risk_than_conservative&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_preset_has_higher_risk_than_conservative&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_lower_confidence_threshold_than_conservative&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_lower_confidence_threshold_than_conservative&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_lower_confidence_threshold_than_conservative&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_more_daily_trades_than_conservative&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_more_daily_trades_than_conservative&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_aggressive_has_more_daily_trades_than_conservative&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_balanced_preset_returns_dict&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_balanced_preset_returns_dict&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_balanced_preset_returns_dict&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_range_repeat_uses_technical_source_only&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_range_repeat_uses_technical_source_only&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_range_repeat_uses_technical_source_only&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_trend_follow_uses_mtf_source&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_trend_follow_uses_mtf_source&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_trend_follow_uses_mtf_source&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_invalid_preset_raises_value_error&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_invalid_preset_raises_value_error&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestApplyPreset::test_invalid_preset_raises_value_error&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_risk_percent_ordering&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_risk_percent_ordering&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_risk_percent_ordering&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_confidence_threshold_ordering&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_confidence_threshold_ordering&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_confidence_threshold_ordering&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_max_daily_trades_ordering&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Passed&#34;, &#34;testId&#34;: &#34;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_max_daily_trades_ordering&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Passed&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_05_strategy_presets.py::TestPresetRiskOrdering::test_max_daily_trades_ordering&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;No log output captured.&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_returns_dict&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_returns_dict::setup&#34;, &#34;duration&#34;: &#34;667 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_returns_dict::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;667 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 32, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_has_required_top_level_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_has_required_top_level_keys::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_has_required_top_level_keys::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 43, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_symbol_matches_input&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_symbol_matches_input::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_symbol_matches_input::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 59, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_preset_id_matches_input&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_preset_id_matches_input::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_preset_id_matches_input::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 70, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_period_days_matches_input&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_period_days_matches_input::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulateStrategy::test_simulate_period_days_matches_input::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 81, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_has_win_rate&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_has_win_rate::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_has_win_rate::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 122, &amp;quot;Skipped: \u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u5b9f\u884c\u306b\u5fc5\u8981\u306a\u4f9d\u5b58\u304c\u4e0d\u8db3: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_win_rate_is_valid_probability&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_win_rate_is_valid_probability::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_win_rate_is_valid_probability::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 128, &amp;quot;Skipped: \u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u5b9f\u884c\u306b\u5fc5\u8981\u306a\u4f9d\u5b58\u304c\u4e0d\u8db3: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_has_total_trades&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_has_total_trades::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_backtest_has_total_trades::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 134, &amp;quot;Skipped: \u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u5b9f\u884c\u306b\u5fc5\u8981\u306a\u4f9d\u5b58\u304c\u4e0d\u8db3: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_assessment_has_grade&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_assessment_has_grade::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_assessment_has_grade::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 141, &amp;quot;Skipped: \u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u5b9f\u884c\u306b\u5fc5\u8981\u306a\u4f9d\u5b58\u304c\u4e0d\u8db3: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_grade_is_valid_value&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_grade_is_valid_value::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_grade_is_valid_value::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 147, &amp;quot;Skipped: \u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u5b9f\u884c\u306b\u5fc5\u8981\u306a\u4f9d\u5b58\u304c\u4e0d\u8db3: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_assessment_has_summary&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_assessment_has_summary::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationBacktestResult::test_assessment_has_summary::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 153, &amp;quot;Skipped: \u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u5b9f\u884c\u306b\u5fc5\u8981\u306a\u4f9d\u5b58\u304c\u4e0d\u8db3: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_capital_section_exists&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_capital_section_exists::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_capital_section_exists::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 172, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_capital_has_recommended_amount&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_capital_has_recommended_amount::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_capital_has_recommended_amount::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 183, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_larger_account_gives_larger_recommended_capital&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_larger_account_gives_larger_recommended_capital::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationCapitalCalculation::test_larger_account_gives_larger_recommended_capital::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 196, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[conservative]&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[conservative]::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[conservative]::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 229, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[balanced]&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[balanced]::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[balanced]::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 229, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[aggressive]&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[aggressive]::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[aggressive]::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 229, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[range_repeat]&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[range_repeat]::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[range_repeat]::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 229, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[trend_follow]&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[trend_follow]::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_each_preset_completes_without_error[trend_follow]::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 229, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[conservative]&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[conservative]::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[conservative]::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 252, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[balanced]&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[balanced]::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[balanced]::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 252, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[aggressive]&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[aggressive]::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationAllPresets::test_grade_reflects_preset_risk_level[aggressive]::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 252, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_invalid_preset_raises_error&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_invalid_preset_raises_error::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_invalid_preset_raises_error::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 282, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_eurusd_simulation_works&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_eurusd_simulation_works::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_eurusd_simulation_works::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 292, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_gbpusd_simulation_works&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_gbpusd_simulation_works::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_gbpusd_simulation_works::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 303, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_no_preset_uses_default_config&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_no_preset_uses_default_config::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_06_simulation.py::TestSimulationEdgeCases::test_no_preset_uses_default_config::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_06_simulation.py&amp;#x27;, 313, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_basic_key_format&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_basic_key_format::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_basic_key_format::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 33, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_symbol_is_uppercased&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_symbol_is_uppercased::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_symbol_is_uppercased::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 39, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_with_additional_params&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_with_additional_params::setup&#34;, &#34;duration&#34;: &#34;2 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_with_additional_params::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;2 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 50, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_params_are_sorted&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_params_are_sorted::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_key_params_are_sorted::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 57, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_prefixes_give_different_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_prefixes_give_different_keys::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_prefixes_give_different_keys::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 68, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_symbols_give_different_keys&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_symbols_give_different_keys::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheKey::test_different_symbols_give_different_keys::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 75, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_miss_returns_none&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_miss_returns_none::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_miss_returns_none::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 97, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_put_and_get_roundtrip&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_put_and_get_roundtrip::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_put_and_get_roundtrip::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 104, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_overwrite&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_overwrite::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestCacheOperations::test_cache_overwrite::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 119, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_is_called_on_miss&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_is_called_on_miss::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_is_called_on_miss::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 144, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_not_called_on_hit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_not_called_on_hit::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestGetOrCompute::test_compute_function_not_called_on_hit::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 158, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: No module named &amp;#x27;psycopg&amp;#x27;&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_exists&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_exists::setup&#34;, &#34;duration&#34;: &#34;1 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_exists::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;1 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 197, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;get_plan&amp;#x27; from &amp;#x27;src.auth.plans&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\auth\\\\plans.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_exists&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_exists::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_exists::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 201, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;get_plan&amp;#x27; from &amp;#x27;src.auth.plans&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\auth\\\\plans.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_has_lower_daily_limit&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_has_lower_daily_limit::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_free_plan_has_lower_daily_limit::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 205, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;get_plan&amp;#x27; from &amp;#x27;src.auth.plans&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\auth\\\\plans.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_unknown_plan_falls_back_to_free&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_unknown_plan_falls_back_to_free::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_unknown_plan_falls_back_to_free::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 215, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;get_plan&amp;#x27; from &amp;#x27;src.auth.plans&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\auth\\\\plans.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_has_ai_features&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_has_ai_features::setup&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_07_cache_infra.py::TestSaaSPlans::test_pro_plan_has_ai_features::setup&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_07_cache_infra.py&amp;#x27;, 224, &amp;quot;Skipped: \u4f9d\u5b58\u95a2\u4fc2\u4e0d\u8db3\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7: cannot import name &amp;#x27;get_plan&amp;#x27; from &amp;#x27;src.auth.plans&amp;#x27; (C:\\\\devlop\\\\fx\\\\backend\\\\src\\\\auth\\\\plans.py)&amp;quot;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestHealthCheck::test_health_endpoint_returns_200&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestHealthCheck::test_health_endpoint_returns_200&#34;, &#34;duration&#34;: &#34;102 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestHealthCheck::test_health_endpoint_returns_200&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;102 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 31, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestHealthCheck::test_health_endpoint_returns_ok_status&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestHealthCheck::test_health_endpoint_returns_ok_status&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestHealthCheck::test_health_endpoint_returns_ok_status&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 39, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestPresetsAPI::test_presets_endpoint_accessible&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestPresetsAPI::test_presets_endpoint_accessible&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestPresetsAPI::test_presets_endpoint_accessible&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 58, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestPresetsAPI::test_presets_returns_list_when_authenticated&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestPresetsAPI::test_presets_returns_list_when_authenticated&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestPresetsAPI::test_presets_returns_list_when_authenticated&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 69, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestAutoTradeConfigAPI::test_config_endpoint_exists&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestAutoTradeConfigAPI::test_config_endpoint_exists&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestAutoTradeConfigAPI::test_config_endpoint_exists&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 91, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestAutoTradeConfigAPI::test_config_response_has_json_body&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestAutoTradeConfigAPI::test_config_response_has_json_body&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestAutoTradeConfigAPI::test_config_response_has_json_body&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 99, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_endpoint_exists&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_endpoint_exists&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_endpoint_exists&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 113, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_returns_valid_response&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_returns_valid_response&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_returns_valid_response&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 125, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_with_invalid_preset_returns_error&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_with_invalid_preset_returns_error&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestSimulateAPI::test_simulate_with_invalid_preset_returns_error&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 143, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_json_endpoint_accessible&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_json_endpoint_accessible&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_json_endpoint_accessible&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 166, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_has_paths&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_has_paths&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_has_paths&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 174, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_has_components&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_has_components&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_openapi_has_components&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 186, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_autotrade_routes_in_openapi&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_autotrade_routes_in_openapi&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestOpenAPIDocumentation::test_autotrade_routes_in_openapi&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 196, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}], &#34;tests/presentation/test_08_api_endpoints.py::TestCORSHeaders::test_preflight_request_is_handled&#34;: [{&#34;extras&#34;: [], &#34;result&#34;: &#34;Skipped&#34;, &#34;testId&#34;: &#34;tests/presentation/test_08_api_endpoints.py::TestCORSHeaders::test_preflight_request_is_handled&#34;, &#34;duration&#34;: &#34;0 ms&#34;, &#34;resultsTableRow&#34;: [&#34;&lt;td class=\&#34;col-result\&#34;&gt;Skipped&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-testId\&#34;&gt;tests/presentation/test_08_api_endpoints.py::TestCORSHeaders::test_preflight_request_is_handled&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-duration\&#34;&gt;0 ms&lt;/td&gt;&#34;, &#34;&lt;td class=\&#34;col-links\&#34;&gt;&lt;/td&gt;&#34;], &#34;log&#34;: &#34;(&amp;#x27;C:\\\\devlop\\\\fx\\\\backend\\\\tests\\\\presentation\\\\test_08_api_endpoints.py&amp;#x27;, 214, &amp;#x27;Skipped: FastAPI TestClient \u304c\u521d\u671f\u5316\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f&amp;#x27;)\n&#34;}]}, &#34;renderCollapsed&#34;: [&#34;passed&#34;], &#34;initialSort&#34;: &#34;result&#34;, &#34;title&#34;: &#34;test_report.html&#34;}"></div>
+    <script>
+      (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+const { getCollapsedCategory, setCollapsedIds } = require('./storage.js')
+
+class DataManager {
+    setManager(data) {
+        const collapsedCategories = [...getCollapsedCategory(data.renderCollapsed)]
+        const collapsedIds = []
+        const tests = Object.values(data.tests).flat().map((test, index) => {
+            const collapsed = collapsedCategories.includes(test.result.toLowerCase())
+            const id = `test_${index}`
+            if (collapsed) {
+                collapsedIds.push(id)
+            }
+            return {
+                ...test,
+                id,
+                collapsed,
+            }
+        })
+        const dataBlob = { ...data, tests }
+        this.data = { ...dataBlob }
+        this.renderData = { ...dataBlob }
+        setCollapsedIds(collapsedIds)
+    }
+
+    get allData() {
+        return { ...this.data }
+    }
+
+    resetRender() {
+        this.renderData = { ...this.data }
+    }
+
+    setRender(data) {
+        this.renderData.tests = [...data]
+    }
+
+    toggleCollapsedItem(id) {
+        this.renderData.tests = this.renderData.tests.map((test) =>
+            test.id === id ? { ...test, collapsed: !test.collapsed } : test,
+        )
+    }
+
+    set allCollapsed(collapsed) {
+        this.renderData = { ...this.renderData, tests: [...this.renderData.tests.map((test) => (
+            { ...test, collapsed }
+        ))] }
+    }
+
+    get testSubset() {
+        return [...this.renderData.tests]
+    }
+
+    get environment() {
+        return this.renderData.environment
+    }
+
+    get initialSort() {
+        return this.data.initialSort
+    }
+}
+
+module.exports = {
+    manager: new DataManager(),
+}
+
+},{"./storage.js":8}],2:[function(require,module,exports){
+const mediaViewer = require('./mediaviewer.js')
+const templateEnvRow = document.getElementById('template_environment_row')
+const templateResult = document.getElementById('template_results-table__tbody')
+
+function htmlToElements(html) {
+    const temp = document.createElement('template')
+    temp.innerHTML = html
+    return temp.content.childNodes
+}
+
+const find = (selector, elem) => {
+    if (!elem) {
+        elem = document
+    }
+    return elem.querySelector(selector)
+}
+
+const findAll = (selector, elem) => {
+    if (!elem) {
+        elem = document
+    }
+    return [...elem.querySelectorAll(selector)]
+}
+
+const dom = {
+    getStaticRow: (key, value) => {
+        const envRow = templateEnvRow.content.cloneNode(true)
+        const isObj = typeof value === 'object' && value !== null
+        const values = isObj ? Object.keys(value).map((k) => `${k}: ${value[k]}`) : null
+
+        const valuesElement = htmlToElements(
+            values ? `<ul>${values.map((val) => `<li>${val}</li>`).join('')}<ul>` : `<div>${value}</div>`)[0]
+        const td = findAll('td', envRow)
+        td[0].textContent = key
+        td[1].appendChild(valuesElement)
+
+        return envRow
+    },
+    getResultTBody: ({ testId, id, log, extras, resultsTableRow, tableHtml, result, collapsed }) => {
+        const resultBody = templateResult.content.cloneNode(true)
+        resultBody.querySelector('tbody').classList.add(result.toLowerCase())
+        resultBody.querySelector('tbody').id = testId
+        resultBody.querySelector('.collapsible').dataset.id = id
+
+        resultsTableRow.forEach((html) => {
+            const t = document.createElement('template')
+            t.innerHTML = html
+            resultBody.querySelector('.collapsible').appendChild(t.content)
+        })
+
+        if (log) {
+            // Wrap lines starting with "E" with span.error to color those lines red
+            const wrappedLog = log.replace(/^E.*$/gm, (match) => `<span class="error">${match}</span>`)
+            resultBody.querySelector('.log').innerHTML = wrappedLog
+        } else {
+            resultBody.querySelector('.log').remove()
+        }
+
+        if (collapsed) {
+            resultBody.querySelector('.collapsible > td')?.classList.add('collapsed')
+            resultBody.querySelector('.extras-row').classList.add('hidden')
+        } else {
+            resultBody.querySelector('.collapsible > td')?.classList.remove('collapsed')
+        }
+
+        const media = []
+        extras?.forEach(({ name, format_type, content }) => {
+            if (['image', 'video'].includes(format_type)) {
+                media.push({ path: content, name, format_type })
+            }
+
+            if (format_type === 'html') {
+                resultBody.querySelector('.extraHTML').insertAdjacentHTML('beforeend', `<div>${content}</div>`)
+            }
+        })
+        mediaViewer.setup(resultBody, media)
+
+        // Add custom html from the pytest_html_results_table_html hook
+        tableHtml?.forEach((item) => {
+            resultBody.querySelector('td[class="extra"]').insertAdjacentHTML('beforeend', item)
+        })
+
+        return resultBody
+    },
+}
+
+module.exports = {
+    dom,
+    htmlToElements,
+    find,
+    findAll,
+}
+
+},{"./mediaviewer.js":6}],3:[function(require,module,exports){
+const { manager } = require('./datamanager.js')
+const { doSort } = require('./sort.js')
+const storageModule = require('./storage.js')
+
+const getFilteredSubSet = (filter) =>
+    manager.allData.tests.filter(({ result }) => filter.includes(result.toLowerCase()))
+
+const doInitFilter = () => {
+    const currentFilter = storageModule.getVisible()
+    const filteredSubset = getFilteredSubSet(currentFilter)
+    manager.setRender(filteredSubset)
+}
+
+const doFilter = (type, show) => {
+    if (show) {
+        storageModule.showCategory(type)
+    } else {
+        storageModule.hideCategory(type)
+    }
+
+    const currentFilter = storageModule.getVisible()
+    const filteredSubset = getFilteredSubSet(currentFilter)
+    manager.setRender(filteredSubset)
+
+    const sortColumn = storageModule.getSort()
+    doSort(sortColumn, true)
+}
+
+module.exports = {
+    doFilter,
+    doInitFilter,
+}
+
+},{"./datamanager.js":1,"./sort.js":7,"./storage.js":8}],4:[function(require,module,exports){
+const { redraw, bindEvents, renderStatic } = require('./main.js')
+const { doInitFilter } = require('./filter.js')
+const { doInitSort } = require('./sort.js')
+const { manager } = require('./datamanager.js')
+const data = JSON.parse(document.getElementById('data-container').dataset.jsonblob)
+
+function init() {
+    manager.setManager(data)
+    doInitFilter()
+    doInitSort()
+    renderStatic()
+    redraw()
+    bindEvents()
+}
+
+init()
+
+},{"./datamanager.js":1,"./filter.js":3,"./main.js":5,"./sort.js":7}],5:[function(require,module,exports){
+const { dom, find, findAll } = require('./dom.js')
+const { manager } = require('./datamanager.js')
+const { doSort } = require('./sort.js')
+const { doFilter } = require('./filter.js')
+const {
+    getVisible,
+    getCollapsedIds,
+    setCollapsedIds,
+    getSort,
+    getSortDirection,
+    possibleFilters,
+} = require('./storage.js')
+
+const removeChildren = (node) => {
+    while (node.firstChild) {
+        node.removeChild(node.firstChild)
+    }
+}
+
+const renderStatic = () => {
+    const renderEnvironmentTable = () => {
+        const environment = manager.environment
+        const rows = Object.keys(environment).map((key) => dom.getStaticRow(key, environment[key]))
+        const table = document.getElementById('environment')
+        removeChildren(table)
+        rows.forEach((row) => table.appendChild(row))
+    }
+    renderEnvironmentTable()
+}
+
+const addItemToggleListener = (elem) => {
+    elem.addEventListener('click', ({ target }) => {
+        const id = target.parentElement.dataset.id
+        manager.toggleCollapsedItem(id)
+
+        const collapsedIds = getCollapsedIds()
+        if (collapsedIds.includes(id)) {
+            const updated = collapsedIds.filter((item) => item !== id)
+            setCollapsedIds(updated)
+        } else {
+            collapsedIds.push(id)
+            setCollapsedIds(collapsedIds)
+        }
+        redraw()
+    })
+}
+
+const renderContent = (tests) => {
+    const sortAttr = getSort(manager.initialSort)
+    const sortAsc = JSON.parse(getSortDirection())
+    const rows = tests.map(dom.getResultTBody)
+    const table = document.getElementById('results-table')
+    const tableHeader = document.getElementById('results-table-head')
+
+    const newTable = document.createElement('table')
+    newTable.id = 'results-table'
+
+    // remove all sorting classes and set the relevant
+    findAll('.sortable', tableHeader).forEach((elem) => elem.classList.remove('asc', 'desc'))
+    tableHeader.querySelector(`.sortable[data-column-type="${sortAttr}"]`)?.classList.add(sortAsc ? 'desc' : 'asc')
+    newTable.appendChild(tableHeader)
+
+    if (!rows.length) {
+        const emptyTable = document.getElementById('template_results-table__body--empty').content.cloneNode(true)
+        newTable.appendChild(emptyTable)
+    } else {
+        rows.forEach((row) => {
+            if (!!row) {
+                findAll('.collapsible td:not(.col-links', row).forEach(addItemToggleListener)
+                find('.logexpander', row).addEventListener('click',
+                    (evt) => evt.target.parentNode.classList.toggle('expanded'),
+                )
+                newTable.appendChild(row)
+            }
+        })
+    }
+
+    table.replaceWith(newTable)
+}
+
+const renderDerived = () => {
+    const currentFilter = getVisible()
+    possibleFilters.forEach((result) => {
+        const input = document.querySelector(`input[data-test-result="${result}"]`)
+        input.checked = currentFilter.includes(result)
+    })
+}
+
+const bindEvents = () => {
+    const filterColumn = (evt) => {
+        const { target: element } = evt
+        const { testResult } = element.dataset
+
+        doFilter(testResult, element.checked)
+        const collapsedIds = getCollapsedIds()
+        const updated = manager.renderData.tests.map((test) => {
+            return {
+                ...test,
+                collapsed: collapsedIds.includes(test.id),
+            }
+        })
+        manager.setRender(updated)
+        redraw()
+    }
+
+    const header = document.getElementById('environment-header')
+    header.addEventListener('click', () => {
+        const table = document.getElementById('environment')
+        table.classList.toggle('hidden')
+        header.classList.toggle('collapsed')
+    })
+
+    findAll('input[name="filter_checkbox"]').forEach((elem) => {
+        elem.addEventListener('click', filterColumn)
+    })
+
+    findAll('.sortable').forEach((elem) => {
+        elem.addEventListener('click', (evt) => {
+            const { target: element } = evt
+            const { columnType } = element.dataset
+            doSort(columnType)
+            redraw()
+        })
+    })
+
+    document.getElementById('show_all_details').addEventListener('click', () => {
+        manager.allCollapsed = false
+        setCollapsedIds([])
+        redraw()
+    })
+    document.getElementById('hide_all_details').addEventListener('click', () => {
+        manager.allCollapsed = true
+        const allIds = manager.renderData.tests.map((test) => test.id)
+        setCollapsedIds(allIds)
+        redraw()
+    })
+}
+
+const redraw = () => {
+    const { testSubset } = manager
+
+    renderContent(testSubset)
+    renderDerived()
+}
+
+module.exports = {
+    redraw,
+    bindEvents,
+    renderStatic,
+}
+
+},{"./datamanager.js":1,"./dom.js":2,"./filter.js":3,"./sort.js":7,"./storage.js":8}],6:[function(require,module,exports){
+class MediaViewer {
+    constructor(assets) {
+        this.assets = assets
+        this.index = 0
+    }
+
+    nextActive() {
+        this.index = this.index === this.assets.length - 1 ? 0 : this.index + 1
+        return [this.activeFile, this.index]
+    }
+
+    prevActive() {
+        this.index = this.index === 0 ? this.assets.length - 1 : this.index -1
+        return [this.activeFile, this.index]
+    }
+
+    get currentIndex() {
+        return this.index
+    }
+
+    get activeFile() {
+        return this.assets[this.index]
+    }
+}
+
+
+const setup = (resultBody, assets) => {
+    if (!assets.length) {
+        resultBody.querySelector('.media').classList.add('hidden')
+        return
+    }
+
+    const mediaViewer = new MediaViewer(assets)
+    const container = resultBody.querySelector('.media-container')
+    const leftArrow = resultBody.querySelector('.media-container__nav--left')
+    const rightArrow = resultBody.querySelector('.media-container__nav--right')
+    const mediaName = resultBody.querySelector('.media__name')
+    const counter = resultBody.querySelector('.media__counter')
+    const imageEl = resultBody.querySelector('img')
+    const sourceEl = resultBody.querySelector('source')
+    const videoEl = resultBody.querySelector('video')
+
+    const setImg = (media, index) => {
+        if (media?.format_type === 'image') {
+            imageEl.src = media.path
+
+            imageEl.classList.remove('hidden')
+            videoEl.classList.add('hidden')
+        } else if (media?.format_type === 'video') {
+            sourceEl.src = media.path
+
+            videoEl.classList.remove('hidden')
+            imageEl.classList.add('hidden')
+        }
+
+        mediaName.innerText = media?.name
+        counter.innerText = `${index + 1} / ${assets.length}`
+    }
+    setImg(mediaViewer.activeFile, mediaViewer.currentIndex)
+
+    const moveLeft = () => {
+        const [media, index] = mediaViewer.prevActive()
+        setImg(media, index)
+    }
+    const doRight = () => {
+        const [media, index] = mediaViewer.nextActive()
+        setImg(media, index)
+    }
+    const openImg = () => {
+        window.open(mediaViewer.activeFile.path, '_blank')
+    }
+    if (assets.length === 1) {
+        container.classList.add('media-container--fullscreen')
+    } else {
+        leftArrow.addEventListener('click', moveLeft)
+        rightArrow.addEventListener('click', doRight)
+    }
+    imageEl.addEventListener('click', openImg)
+}
+
+module.exports = {
+    setup,
+}
+
+},{}],7:[function(require,module,exports){
+const { manager } = require('./datamanager.js')
+const storageModule = require('./storage.js')
+
+const genericSort = (list, key, ascending, customOrder) => {
+    let sorted
+    if (customOrder) {
+        sorted = list.sort((a, b) => {
+            const aValue = a.result.toLowerCase()
+            const bValue = b.result.toLowerCase()
+
+            const aIndex = customOrder.findIndex((item) => item.toLowerCase() === aValue)
+            const bIndex = customOrder.findIndex((item) => item.toLowerCase() === bValue)
+
+            // Compare the indices to determine the sort order
+            return aIndex - bIndex
+        })
+    } else {
+        sorted = list.sort((a, b) => a[key] === b[key] ? 0 : a[key] > b[key] ? 1 : -1)
+    }
+
+    if (ascending) {
+        sorted.reverse()
+    }
+    return sorted
+}
+
+const durationSort = (list, ascending) => {
+    const parseDuration = (duration) => {
+        if (duration.includes(':')) {
+            // If it's in the format "HH:mm:ss"
+            const [hours, minutes, seconds] = duration.split(':').map(Number)
+            return (hours * 3600 + minutes * 60 + seconds) * 1000
+        } else {
+            // If it's in the format "nnn ms"
+            return parseInt(duration)
+        }
+    }
+    const sorted = list.sort((a, b) => parseDuration(a['duration']) - parseDuration(b['duration']))
+    if (ascending) {
+        sorted.reverse()
+    }
+    return sorted
+}
+
+const doInitSort = () => {
+    const type = storageModule.getSort(manager.initialSort)
+    const ascending = storageModule.getSortDirection()
+    const list = manager.testSubset
+    const initialOrder = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed', 'Skipped', 'Passed']
+
+    storageModule.setSort(type)
+    storageModule.setSortDirection(ascending)
+
+    if (type?.toLowerCase() === 'original') {
+        manager.setRender(list)
+    } else {
+        let sortedList
+        switch (type) {
+        case 'duration':
+            sortedList = durationSort(list, ascending)
+            break
+        case 'result':
+            sortedList = genericSort(list, type, ascending, initialOrder)
+            break
+        default:
+            sortedList = genericSort(list, type, ascending)
+            break
+        }
+        manager.setRender(sortedList)
+    }
+}
+
+const doSort = (type, skipDirection) => {
+    const newSortType = storageModule.getSort(manager.initialSort) !== type
+    const currentAsc = storageModule.getSortDirection()
+    let ascending
+    if (skipDirection) {
+        ascending = currentAsc
+    } else {
+        ascending = newSortType ? false : !currentAsc
+    }
+    storageModule.setSort(type)
+    storageModule.setSortDirection(ascending)
+
+    const list = manager.testSubset
+    const sortedList = type === 'duration' ? durationSort(list, ascending) : genericSort(list, type, ascending)
+    manager.setRender(sortedList)
+}
+
+module.exports = {
+    doInitSort,
+    doSort,
+}
+
+},{"./datamanager.js":1,"./storage.js":8}],8:[function(require,module,exports){
+const possibleFilters = [
+    'passed',
+    'skipped',
+    'failed',
+    'error',
+    'xfailed',
+    'xpassed',
+    'rerun',
+]
+
+const getVisible = () => {
+    const url = new URL(window.location.href)
+    const settings = new URLSearchParams(url.search).get('visible')
+    const lower = (item) => {
+        const lowerItem = item.toLowerCase()
+        if (possibleFilters.includes(lowerItem)) {
+            return lowerItem
+        }
+        return null
+    }
+    return settings === null ?
+        possibleFilters :
+        [...new Set(settings?.split(',').map(lower).filter((item) => item))]
+}
+
+const hideCategory = (categoryToHide) => {
+    const url = new URL(window.location.href)
+    const visibleParams = new URLSearchParams(url.search).get('visible')
+    const currentVisible = visibleParams ? visibleParams.split(',') : [...possibleFilters]
+    const settings = [...new Set(currentVisible)].filter((f) => f !== categoryToHide).join(',')
+
+    url.searchParams.set('visible', settings)
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const showCategory = (categoryToShow) => {
+    if (typeof window === 'undefined') {
+        return
+    }
+    const url = new URL(window.location.href)
+    const currentVisible = new URLSearchParams(url.search).get('visible')?.split(',').filter(Boolean) ||
+        [...possibleFilters]
+    const settings = [...new Set([categoryToShow, ...currentVisible])]
+    const noFilter = possibleFilters.length === settings.length || !settings.length
+
+    noFilter ? url.searchParams.delete('visible') : url.searchParams.set('visible', settings.join(','))
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const getSort = (initialSort) => {
+    const url = new URL(window.location.href)
+    let sort = new URLSearchParams(url.search).get('sort')
+    if (!sort) {
+        sort = initialSort || 'result'
+    }
+    return sort
+}
+
+const setSort = (type) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('sort', type)
+    window.history.pushState({}, null, unescape(url.href))
+}
+
+const getCollapsedCategory = (renderCollapsed) => {
+    let categories
+    if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        const collapsedItems = new URLSearchParams(url.search).get('collapsed')
+        switch (true) {
+        case !renderCollapsed && collapsedItems === null:
+            categories = ['passed']
+            break
+        case collapsedItems?.length === 0 || /^["']{2}$/.test(collapsedItems):
+            categories = []
+            break
+        case /^all$/.test(collapsedItems) || collapsedItems === null && /^all$/.test(renderCollapsed):
+            categories = [...possibleFilters]
+            break
+        default:
+            categories = collapsedItems?.split(',').map((item) => item.toLowerCase()) || renderCollapsed
+            break
+        }
+    } else {
+        categories = []
+    }
+    return categories
+}
+
+const getSortDirection = () => JSON.parse(sessionStorage.getItem('sortAsc')) || false
+const setSortDirection = (ascending) => sessionStorage.setItem('sortAsc', ascending)
+
+const getCollapsedIds = () => JSON.parse(sessionStorage.getItem('collapsedIds')) || []
+const setCollapsedIds = (list) => sessionStorage.setItem('collapsedIds', JSON.stringify(list))
+
+module.exports = {
+    getVisible,
+    hideCategory,
+    showCategory,
+    getCollapsedIds,
+    setCollapsedIds,
+    getSort,
+    setSort,
+    getSortDirection,
+    setSortDirection,
+    getCollapsedCategory,
+    possibleFilters,
+}
+
+},{}]},{},[4]);
+    </script>
+  </footer>
+</html>
