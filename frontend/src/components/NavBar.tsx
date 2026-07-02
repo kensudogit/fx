@@ -14,6 +14,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { SAAS_ENABLED } from "@/lib/auth";
 
@@ -49,13 +50,8 @@ const NAV_LINKS = [
  * - ページ遷移（hashchange イベント）でメニューを自動的に閉じる
  */
 export function NavBar() {
-  // 認証コンテキストからセッション情報・ログアウト関数・ロード状態を取得
   const { session, logout, loading } = useAuth();
-
-  /**
-   * モバイルハンバーガーメニューの開閉状態。
-   * 初期値 false: デフォルトは閉じた状態
-   */
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
   /**
@@ -86,19 +82,16 @@ export function NavBar() {
     return () => window.removeEventListener("hashchange", close);
   }, []);
 
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
+
   return (
     <header className="site-header">
       <div className="container header-inner">
-        {/* ロゴリンク: クリック時にメニューを閉じてトップへ遷移 */}
         <a href="/" className="logo" onClick={() => setMenuOpen(false)}>
           FX Tool
         </a>
 
-        {/*
-         * ハンバーガーボタン（モバイル専用）。
-         * aria-label と aria-expanded で現在の開閉状態をスクリーンリーダーに伝える。
-         * 3本の bar スパンが CSS アニメーションで ✕ マークに変化する。
-         */}
         <button
           type="button"
           className="nav-toggle"
@@ -111,70 +104,51 @@ export function NavBar() {
           <span className="nav-toggle-bar" />
         </button>
 
-        {/*
-         * メインナビゲーション。
-         * menuOpen が true の時に "nav-open" クラスを付与し、
-         * CSS でモバイルメニューを展開表示する。
-         */}
         <nav className={menuOpen ? "nav-open" : ""} aria-label="メインナビ">
-          {/* 共通ページリンク群: リンクをクリックしたらメニューを閉じる */}
           {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>
+            <a
+              key={link.href}
+              href={link.href}
+              className={isActive(link.href) ? "active" : ""}
+              onClick={() => setMenuOpen(false)}
+            >
               {link.label}
             </a>
           ))}
 
-          {/*
-           * 認証済みユーザー向け UI（SaaS モードかつログイン中のみ表示）。
-           * loading 中は表示しないことで、サーバー/クライアントの
-           * ハイドレーション不一致を防ぐ。
-           */}
           {SAAS_ENABLED && !loading && session && (
             <>
-              <a href="/settings" onClick={() => setMenuOpen(false)}>
+              <a
+                href="/settings"
+                className={isActive("/settings") ? "active" : ""}
+                onClick={() => setMenuOpen(false)}
+              >
                 設定
               </a>
-              {/*
-               * プラン名を大文字で表示（例: "FREE", "PRO", "ENTERPRISE"）。
-               * session.tenant.plan はバックエンドから取得したプラン識別子。
-               */}
-              <span className="nav-user">{session.tenant.plan.toUpperCase()}</span>
+              <span className="nav-plan-badge">
+                {session.tenant.plan.toUpperCase()}
+              </span>
               <button
                 type="button"
                 className="nav-logout"
-                onClick={() => {
-                  // ログアウト前にメニューを閉じてからログアウト処理を実行
-                  setMenuOpen(false);
-                  logout();
-                }}
+                onClick={() => { setMenuOpen(false); logout(); }}
               >
                 ログアウト
               </button>
             </>
           )}
 
-          {/*
-           * 未ログインユーザー向け UI（SaaS モードかつ未ログインのみ表示）。
-           * loading 中は非表示にしてレイアウトのちらつきを防ぐ。
-           */}
           {SAAS_ENABLED && !loading && !session && (
             <>
-              <a href="/login" onClick={() => setMenuOpen(false)}>
-                ログイン
-              </a>
-              <a href="/register" onClick={() => setMenuOpen(false)}>
-                登録
+              <a href="/login" onClick={() => setMenuOpen(false)}>ログイン</a>
+              <a href="/register" className="nav-cta" onClick={() => setMenuOpen(false)}>
+                無料登録
               </a>
             </>
           )}
         </nav>
       </div>
 
-      {/*
-       * モバイルメニュー開時に表示される半透明バックドロップ。
-       * タップするとメニューを閉じることができる。
-       * button 要素を使用してキーボード操作（Enter / Space）にも対応。
-       */}
       {menuOpen && (
         <button
           type="button"
