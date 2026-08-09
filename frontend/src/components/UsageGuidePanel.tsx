@@ -865,7 +865,9 @@ export function UsageGuidePanel() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as SavedState
-        setPos(mobile ? defaultPosition(true) : { x: parsed.x, y: parsed.y })
+        // 保存位置は別サイズのウィンドウ/モニターで記録された可能性があるため、
+        // 現在のビューポートに収まるようクランプしてから復元する（画面外に消えるのを防ぐ）。
+        setPos(mobile ? defaultPosition(true) : clampPosition(parsed.x, parsed.y, PANEL_WIDTH, 120))
         setExpanded(mobile ? false : parsed.expanded)
       } catch {
         setPos(defaultPosition(mobile))
