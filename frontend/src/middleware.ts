@@ -85,7 +85,10 @@ export function middleware(request: NextRequest) {
  * - `_next/image` — Next.js の画像最適化エンドポイント
  * - `favicon.ico` — ファビコン
  * - `api` — バックエンドへのプロキシ API ルート（認証はバックエンド側で行う）
+ * - `health` — Railway のヘルスチェック用エンドポイント。
+ *   `railway.toml` の `healthcheckPath = "/health"` が Cookie なしで叩くため、
+ *   ミドルウェアを通すと `/login` へ 307 リダイレクトされデプロイが失敗する。
  */
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api|health).*)"],
 };
