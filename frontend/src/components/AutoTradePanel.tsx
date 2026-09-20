@@ -342,8 +342,26 @@ export default function AutoTradePanel() {
     return <div className="loading">自動取引設定を読み込み中...</div>;
   }
 
-  /** 設定取得に失敗した場合は何も表示しない */
-  if (!config) return null;
+  /**
+   * 設定を取得できなかった場合（API エラー・権限不足など）のフォールバック。
+   *
+   * ここで null を返すと画面が真っ白になり、`load()` が `setError` した
+   * 原因が利用者に届かない。エラー内容と再試行ボタンを表示する。
+   */
+  if (!config) {
+    return (
+      <div className="card">
+        <h2>自動取引エンジン</h2>
+        <p className="error-text">{error ?? "自動取引設定を取得できませんでした。"}</p>
+        <p className="hint">
+          Pro プラン以上が必要です。プランは /settings から確認できます。
+        </p>
+        <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
+          {loading ? "再試行中..." : "再試行"}
+        </button>
+      </div>
+    );
+  }
 
   /** スケジューラの稼働情報（status が null の場合は undefined） */
   const scheduler = status?.scheduler;
