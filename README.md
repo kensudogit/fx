@@ -1,5 +1,9 @@
 # FX Tool
 
+> **AI × FinTech / Quant** — テクニカル・ファンダメンタル分析、ML予測、バックテスト、市場分析を統合したFX分析プラットフォームです。
+>
+> **Stack:** Python · FastAPI · Next.js · React · TypeScript · PostgreSQL · ML/AI
+
 FX通貨ペアのテクニカル分析・ファンダメンタル分析ツール
 
 ## 技術スタック
