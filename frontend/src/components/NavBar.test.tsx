@@ -54,6 +54,7 @@ describe("NavBar — 基本の描画", () => {
     render(<NavBar />);
 
     expect(navLink("FX Tool").getAttribute("href")).toBe("/");
+    expect(navLink("FX Tool").querySelector("img")?.getAttribute("src")).toBe("/PC.png");
     for (const [label, href] of [
       ["テクニカル", "/"],
       ["ファンダ", "/fundamental"],

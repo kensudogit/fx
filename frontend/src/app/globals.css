@@ -114,25 +114,31 @@ header .header-inner {
 }
 
 .logo {
-  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.logo-text {
+  font-size: 1rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   background: var(--gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
-.logo::before {
-  content: "◈";
-  font-size: 1.1rem;
-  background: var(--gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.logo-img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  object-fit: cover;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.16);
 }
 
 nav {
@@ -1734,8 +1740,13 @@ main {
     padding: 0 1rem;
   }
 
-  .logo {
-    font-size: 1.2rem;
+  .logo-text {
+    font-size: 0.95rem;
+  }
+
+  .logo-img {
+    width: 26px;
+    height: 26px;
   }
 
   .nav-toggle {

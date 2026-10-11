@@ -61,6 +61,13 @@ describe("layout — metadata 設定", () => {
     expect(metadata.manifest).toBe("/manifest.json");
   });
 
+  it("タブアイコンに PC.png を使う", () => {
+    expect(metadata.icons).toEqual({
+      icon: "/PC.png",
+      apple: "/PC.png",
+    });
+  });
+
   it("Apple Web App（ホーム画面追加）に対応する", () => {
     expect(metadata.appleWebApp).toEqual({
       capable: true,

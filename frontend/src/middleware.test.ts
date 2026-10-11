@@ -106,7 +106,7 @@ describe("middleware — matcher 設定", () => {
     expect(config.matcher).toHaveLength(1);
   });
 
-  it.each(["/_next/static/chunk.js", "/_next/image", "/favicon.ico", "/api/symbols", "/health"])(
+  it.each(["/_next/static/chunk.js", "/_next/image", "/favicon.ico", "/PC.png", "/api/symbols", "/health"])(
     "%s はミドルウェアをバイパスする",
     (path) => {
       expect(matches(path)).toBe(false);
