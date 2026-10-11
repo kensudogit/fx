@@ -12,6 +12,7 @@
  * - モバイル向けクイックドック（MobileQuickDock）の常時表示
  * - 使い方ガイドパネル（UsageGuidePanel）の常時表示
  * - PWA マニフェスト参照・Apple Web App 設定
+ * - タブ／ホーム画面アイコン（`/PC.png`）
  */
 
 import type { Metadata, Viewport } from "next";
@@ -54,6 +55,10 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
+  },
+  icons: {
+    icon: "/PC.png",
+    apple: "/PC.png",
   },
   manifest: "/manifest.json",
 };

@@ -89,7 +89,8 @@ export function NavBar() {
     <header className="site-header">
       <div className="container header-inner">
         <a href="/" className="logo" onClick={() => setMenuOpen(false)}>
-          FX Tool
+          <img src="/PC.png" alt="" className="logo-img" width={28} height={28} />
+          <span className="logo-text">FX Tool</span>
         </a>
 
         <button

@@ -11,7 +11,7 @@
  * 3. Cookie `fx_access_token` が存在する場合 → 認証済みとして通過させる
  * 4. トークンがない場合 → `/login?from={元のパス}` へリダイレクトする
  *
- * `matcher` の設定により、静的ファイル（`_next/static`・画像・favicon）と
+ * `matcher` の設定により、静的ファイル（`_next/static`・画像・favicon・PC.png）と
  * API ルートへのリクエストはミドルウェアをバイパスする。
  *
  * ※ トークンの有効性（署名・有効期限）はここでは検証しない。
@@ -84,11 +84,12 @@ export function middleware(request: NextRequest) {
  * - `_next/static` — Next.js のビルド済み静的アセット
  * - `_next/image` — Next.js の画像最適化エンドポイント
  * - `favicon.ico` — ファビコン
+ * - `PC.png` — ナビ／タブ用ロゴ。未ログインの /login からも参照する
  * - `api` — バックエンドへのプロキシ API ルート（認証はバックエンド側で行う）
  * - `health` — Railway のヘルスチェック用エンドポイント。
  *   `railway.toml` の `healthcheckPath = "/health"` が Cookie なしで叩くため、
  *   ミドルウェアを通すと `/login` へ 307 リダイレクトされデプロイが失敗する。
  */
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api|health).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|PC.png|api|health).*)"],
 };
